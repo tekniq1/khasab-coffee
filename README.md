@@ -142,25 +142,19 @@
 
 - اتجاه الواجهة: RTL كامل باللغة العربية، متجاوب 100% مع كافة الشاشات (الجوال أولاً).
 
-This project was built with [Lovable](https://lovable.dev).
+---
 
-**Live app**: https://khasab-coffee-bloom.lovable.app
+## تشغيل المشروع محلياً (Local Development)
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/78793517-0077-40a9-b34b-84c3dad54741).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+لتشغيل المشروع على جهازك:
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+# تثبيت الحزم والمكتبات
+npm install
+
+# تشغيل خادم التطوير
 npm run dev
+
+# بناء المشروع للإنتاج
+npm run build
 ```
