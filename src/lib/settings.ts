@@ -113,10 +113,21 @@ export function useLiveStoreSettings() {
 
   const load = async () => {
     try {
-      const { data } = await supabase.from("store_settings").select("*").limit(1).maybeSingle();
-      setSettings(parseStoreSettings(data));
-    } catch {
-      // fallback to defaults
+      const { data, error } = await supabase
+        .from("store_settings")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("Could not fetch store_settings:", error);
+      }
+      if (data) {
+        setSettings(parseStoreSettings(data));
+      }
+    } catch (err) {
+      console.error("useLiveStoreSettings error:", err);
     } finally {
       setLoading(false);
     }
@@ -127,7 +138,8 @@ export function useLiveStoreSettings() {
     const chId = `settings-live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
       .channel(chId)
-      .on("postgres_changes", { event: "*", schema: "public", table: "store_settings" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "store_settings" }, (payload) => {
+        console.log("Store settings updated via Realtime:", payload);
         load();
       })
       .subscribe();

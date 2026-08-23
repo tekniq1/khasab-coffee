@@ -2,8 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Instagram, MessageCircle, Phone } from "lucide-react";
 
 import { brandLogo, categories } from "@/lib/products";
+import { useLiveStoreSettings } from "@/lib/settings";
 
 export function SiteFooter() {
+  const { settings } = useLiveStoreSettings();
+  const phone = settings.whatsapp_number || "967777000000";
+  const cleanPhone = phone.replace(/\D/g, "");
+
   return (
     <footer className="mt-24 bg-primary text-primary-foreground">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-3">
@@ -43,12 +48,18 @@ export function SiteFooter() {
         <div>
           <h3 className="mb-4 text-sm font-bold text-secondary">تواصل معنا</h3>
           <ul className="space-y-3 text-sm opacity-85">
-            <li className="flex items-center gap-2">
-              <Phone className="h-4 w-4 shrink-0" /> 777 000 000
+            <li className="flex items-center gap-2" dir="ltr">
+              <Phone className="h-4 w-4 shrink-0" />
+              <span>+{cleanPhone}</span>
             </li>
             <li className="flex items-center gap-2">
               <MessageCircle className="h-4 w-4 shrink-0" />
-              <a href="https://wa.me/967777000000" className="hover:text-secondary">
+              <a
+                href={`https://wa.me/${cleanPhone}`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-secondary"
+              >
                 واتساب خدمة العملاء
               </a>
             </li>

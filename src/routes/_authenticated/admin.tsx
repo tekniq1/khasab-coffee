@@ -1550,33 +1550,51 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
     e.preventDefault();
     setSaving(true);
     try {
+      // Find existing store_settings row if any
+      const { data: existing } = await supabase
+        .from("store_settings")
+        .select("id")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const bannerData = {
+        whatsapp_number: whatsappNumber,
+        pickup_address: pickupAddress,
+        aden_delivery_fee: adenDeliveryFee,
+        aden_delivery_fee_sar: adenDeliveryFeeSar,
+        pickup_delivery_fee: pickupDeliveryFee,
+        pickup_delivery_fee_sar: pickupDeliveryFeeSar,
+        other_delivery_fee: otherDeliveryFee,
+        other_delivery_fee_sar: otherDeliveryFeeSar,
+        bank_accounts: accounts,
+      };
+
       const payload: Record<string, any> = {
-        id: settings?.id,
         announcement_text: announcementText,
         announcement_enabled: enabled,
-        hero_banners: [
-          {
-            whatsapp_number: whatsappNumber,
-            pickup_address: pickupAddress,
-            aden_delivery_fee: adenDeliveryFee,
-            aden_delivery_fee_sar: adenDeliveryFeeSar,
-            pickup_delivery_fee: pickupDeliveryFee,
-            pickup_delivery_fee_sar: pickupDeliveryFeeSar,
-            other_delivery_fee: otherDeliveryFee,
-            other_delivery_fee_sar: otherDeliveryFeeSar,
-            bank_accounts: accounts,
-          },
-        ],
+        hero_banners: [bannerData],
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from("store_settings").upsert(payload);
-      if (error) throw error;
-      toast.success("تم تحديث كافة إعدادات وشحن وشعارات وحسابات المتجر بنجاح");
+      let saveErr = null;
+      const targetId = existing?.id || settings?.id;
+
+      if (targetId) {
+        const { error } = await supabase.from("store_settings").update(payload).eq("id", targetId);
+        saveErr = error;
+      } else {
+        const { error } = await supabase.from("store_settings").insert([payload]);
+        saveErr = error;
+      }
+
+      if (saveErr) throw saveErr;
+
+      toast.success("تم حفظ ونشر كافة التعديلات للمتجر بنجاح");
       refetch();
     } catch (err: any) {
       console.error("Save settings error:", err);
-      toast.error("تعذر تحديث الإعدادات: " + (err?.message || ""));
+      toast.error("تعذر تحديث الإعدادات: " + (err?.message || "تأكد من صلاحيات المدير"));
     } finally {
       setSaving(false);
     }

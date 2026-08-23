@@ -4,7 +4,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { ProductCard } from "@/components/product-card";
-import { categories, useLiveProducts, type CategoryId } from "@/lib/products";
+import { categories, products, useLiveProducts, type CategoryId } from "@/lib/products";
 
 const searchSchema = z.object({
   cat: z.enum(["coffee", "tools", "matcha", "green"]).optional(),

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/product-card";
-import { heroBanners, useLiveProducts } from "@/lib/products";
+import { heroBanners, products, useLiveProducts } from "@/lib/products";
 
 export const Route = createFileRoute("/")({
   head: () => ({
