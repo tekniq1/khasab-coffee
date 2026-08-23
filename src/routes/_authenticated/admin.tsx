@@ -55,9 +55,13 @@ import {
   defaultBankAccounts,
   defaultPickupAddress,
   defaultWhatsAppNumber,
+  defaultAdenDeliveryFee,
+  defaultPickupFee,
+  defaultOtherDeliveryFee,
   type BankAccount,
   type StoreSettings,
 } from "@/lib/settings";
+import { BankLogo, availableBankOptions } from "@/components/bank-logo";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -1482,6 +1486,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   const [enabled, setEnabled] = useState(settings?.announcement_enabled ?? true);
   const [whatsappNumber, setWhatsappNumber] = useState(settings?.whatsapp_number || defaultWhatsAppNumber);
   const [pickupAddress, setPickupAddress] = useState(settings?.pickup_address || defaultPickupAddress);
+  const [adenDeliveryFee, setAdenDeliveryFee] = useState(settings?.aden_delivery_fee || defaultAdenDeliveryFee);
+  const [pickupDeliveryFee, setPickupDeliveryFee] = useState(settings?.pickup_delivery_fee || defaultPickupFee);
+  const [otherDeliveryFee, setOtherDeliveryFee] = useState(settings?.other_delivery_fee || defaultOtherDeliveryFee);
   const [accounts, setAccounts] = useState<BankAccount[]>(
     settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts
   );
@@ -1489,7 +1496,7 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
   // Add new account row
   const addAccount = () => {
-    setAccounts([...accounts, { bank: "بنك جديد", number: "", holder: "محمصة خصب" }]);
+    setAccounts([...accounts, { bank: "بنك الكريمي", number: "", holder: "محمصة خصب للقهوة", logo_type: "kuraimi" }]);
   };
 
   // Update account row
@@ -1520,6 +1527,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           {
             whatsapp_number: whatsappNumber,
             pickup_address: pickupAddress,
+            aden_delivery_fee: adenDeliveryFee,
+            pickup_delivery_fee: pickupDeliveryFee,
+            other_delivery_fee: otherDeliveryFee,
             bank_accounts: accounts,
           },
         ],
@@ -1528,7 +1538,7 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
       const { error } = await supabase.from("store_settings").upsert(payload);
       if (error) throw error;
-      toast.success("تم تحديث كافة إعدادات وحسابات المتجر بنجاح");
+      toast.success("تم تحديث كافة إعدادات وشحن وحسابات المتجر بنجاح");
       refetch();
     } catch (err: any) {
       console.error("Save settings error:", err);
@@ -1541,9 +1551,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية وشريط العروض والحسابات البنكية</h3>
+        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشحن والحسابات البنكية</h3>
         <p className="text-xs text-muted-foreground">
-          تحكم كامل وفوري في شريط الإعلانات، رقم الواتساب الرسمي، نقطة الاستلام، والحسابات البنكية المعروضة للزبائن
+          تحكم كامل وفوري في شريط الإعلانات، رسوم الشحن والتوصيل، نقطة الاستلام، وشعارات وحسابات البنوك
         </p>
       </div>
 
@@ -1639,12 +1649,71 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
         </div>
 
-        {/* Section 3: Bank Accounts Management */}
+        {/* Section 3: Delivery & Shipping Rates */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
+          <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
+            <Truck className="h-4 w-4 text-secondary" />
+            3. خيارات وتكاليف الشحن والتوصيل (Delivery & Shipping Rates)
+          </h4>
+
+          <p className="text-xs text-muted-foreground">
+            تظهر هذه التسعيرات للعملاء في صفحة إتمام الطلب لتوضيح رسوم الشحن بحسب منطقتهم:
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="block rounded-2xl border bg-background p-3.5">
+              <span className="text-xs font-bold text-primary block mb-1">توصيل منزلي داخل عدن</span>
+              <input
+                type="text"
+                required
+                value={adenDeliveryFee}
+                onChange={(e) => setAdenDeliveryFee(e.target.value)}
+                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                placeholder="1,000 - 5,000 ر.ي"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                مثال: 1,000 - 5,000 ر.ي
+              </span>
+            </label>
+
+            <label className="block rounded-2xl border bg-background p-3.5">
+              <span className="text-xs font-bold text-primary block mb-1">استلام من الفرع (الحجاز)</span>
+              <input
+                type="text"
+                required
+                value={pickupDeliveryFee}
+                onChange={(e) => setPickupDeliveryFee(e.target.value)}
+                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
+                placeholder="مجاناً"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                مثال: مجاناً (0 ر.ي)
+              </span>
+            </label>
+
+            <label className="block rounded-2xl border bg-background p-3.5">
+              <span className="text-xs font-bold text-primary block mb-1">شحن خارج عدن (المحافظات)</span>
+              <input
+                type="text"
+                required
+                value={otherDeliveryFee}
+                onChange={(e) => setOtherDeliveryFee(e.target.value)}
+                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                placeholder="2,000 - 5,000 ر.ي"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                مثال: 2,000 - 5,000 ر.ي
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Section 4: Bank Accounts Management with Logos */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-secondary" />
-              3. الحسابات والمحافظ البنكية للتحويل (Bank Accounts)
+              4. الحسابات والمحافظ البنكية والشعارات (Bank Accounts & Logos)
             </h4>
             <button
               type="button"
@@ -1656,17 +1725,47 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
 
           <p className="text-xs text-muted-foreground">
-            تظهر هذه الحسابات للعملاء في صفحة الدفع ليقوموا بنسخها وتحويل قيمة الطلب عليها:
+            حدد البنك ليظهر شعاره الرسمي تلقائياً للزبون، واكتب رقم الحساب واسم المستفيد:
           </p>
 
           <div className="space-y-3">
             {accounts.map((acc, idx) => (
               <div
                 key={idx}
-                className="grid gap-3 rounded-2xl border bg-background p-3.5 sm:grid-cols-[1fr_1.2fr_1.2fr_auto] items-center"
+                className="grid gap-3 rounded-2xl border bg-background p-3.5 sm:grid-cols-[auto_1fr_1.2fr_1.1fr_1.1fr_auto] items-center"
               >
+                {/* Bank Logo Preview */}
+                <div className="pt-2 sm:pt-0">
+                  <BankLogo bankName={acc.bank} logoType={acc.logo_type} className="h-10 w-10" />
+                </div>
+
                 <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم البنك / المحفظة</span>
+                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">نوع وشعار البنك</span>
+                  <select
+                    value={acc.logo_type || "other"}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value;
+                      const opt = availableBankOptions.find((o) => o.id === selectedVal);
+                      const updated = [...accounts];
+                      updated[idx] = {
+                        ...updated[idx]!,
+                        logo_type: selectedVal,
+                        bank: opt && selectedVal !== "other" ? opt.name : updated[idx]!.bank,
+                      };
+                      setAccounts(updated);
+                    }}
+                    className="w-full rounded-xl border bg-card px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                  >
+                    {availableBankOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>
+                        {opt.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="block">
+                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم البنك / المحفظة المعروض</span>
                   <input
                     type="text"
                     required
@@ -1702,11 +1801,11 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   />
                 </label>
 
-                <div className="pt-4 sm:pt-0 flex justify-end">
+                <div className="flex items-center justify-end pt-2 sm:pt-0">
                   <button
                     type="button"
                     onClick={() => removeAccount(idx)}
-                    className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors"
+                    className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                     title="حذف هذا الحساب"
                   >
                     <Trash2 className="h-4 w-4" />

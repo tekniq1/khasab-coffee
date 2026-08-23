@@ -5,17 +5,21 @@ export type BankAccount = {
   bank: string;
   number: string;
   holder: string;
+  logo_type?: string;
 };
 
 export const defaultBankAccounts: BankAccount[] = [
-  { bank: "بنك الكريمي", number: "1234567890", holder: "محمصة خصب للقهوة" },
-  { bank: "بنك القطيبي", number: "9876543210", holder: "محمصة خصب للقهوة" },
-  { bank: "ون كاش", number: "777000000", holder: "محمصة خصب" },
-  { bank: "محفظة جيب", number: "733111222", holder: "محمصة خصب" },
+  { bank: "بنك الكريمي", number: "1234567890", holder: "محمصة خصب للقهوة", logo_type: "kuraimi" },
+  { bank: "بنك القطيبي", number: "9876543210", holder: "محمصة خصب للقهوة", logo_type: "qutaibi" },
+  { bank: "ون كاش", number: "777000000", holder: "محمصة خصب", logo_type: "onecash" },
+  { bank: "محفظة جيب", number: "733111222", holder: "محمصة خصب", logo_type: "jeeb" },
 ];
 
 export const defaultPickupAddress = "الحجاز الجديد محل أضواء الدور الأول - عدن";
 export const defaultWhatsAppNumber = "967777000000";
+export const defaultAdenDeliveryFee = "1,000 - 5,000 ر.ي";
+export const defaultPickupFee = "مجاناً";
+export const defaultOtherDeliveryFee = "2,000 - 5,000 ر.ي";
 
 export type StoreSettings = {
   id?: string;
@@ -23,6 +27,9 @@ export type StoreSettings = {
   announcement_enabled: boolean;
   whatsapp_number: string;
   pickup_address: string;
+  aden_delivery_fee: string;
+  pickup_delivery_fee: string;
+  other_delivery_fee: string;
   bank_accounts: BankAccount[];
 };
 
@@ -33,6 +40,9 @@ export function parseStoreSettings(row: any): StoreSettings {
       announcement_enabled: true,
       whatsapp_number: defaultWhatsAppNumber,
       pickup_address: defaultPickupAddress,
+      aden_delivery_fee: defaultAdenDeliveryFee,
+      pickup_delivery_fee: defaultPickupFee,
+      other_delivery_fee: defaultOtherDeliveryFee,
       bank_accounts: defaultBankAccounts,
     };
   }
@@ -65,6 +75,9 @@ export function parseStoreSettings(row: any): StoreSettings {
     announcement_enabled: row.announcement_enabled ?? true,
     whatsapp_number: row.whatsapp_number || extra.whatsapp_number || defaultWhatsAppNumber,
     pickup_address: row.pickup_address || extra.pickup_address || defaultPickupAddress,
+    aden_delivery_fee: row.aden_delivery_fee || extra.aden_delivery_fee || defaultAdenDeliveryFee,
+    pickup_delivery_fee: row.pickup_delivery_fee || extra.pickup_delivery_fee || defaultPickupFee,
+    other_delivery_fee: row.other_delivery_fee || extra.other_delivery_fee || defaultOtherDeliveryFee,
     bank_accounts: bankAccounts,
   };
 }
@@ -75,6 +88,9 @@ export function useLiveStoreSettings() {
     announcement_enabled: true,
     whatsapp_number: defaultWhatsAppNumber,
     pickup_address: defaultPickupAddress,
+    aden_delivery_fee: defaultAdenDeliveryFee,
+    pickup_delivery_fee: defaultPickupFee,
+    other_delivery_fee: defaultOtherDeliveryFee,
     bank_accounts: defaultBankAccounts,
   });
   const [loading, setLoading] = useState(true);

@@ -22,7 +22,16 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
-import { useLiveStoreSettings, defaultBankAccounts, defaultPickupAddress, defaultWhatsAppNumber } from "@/lib/settings";
+import {
+  useLiveStoreSettings,
+  defaultBankAccounts,
+  defaultPickupAddress,
+  defaultWhatsAppNumber,
+  defaultAdenDeliveryFee,
+  defaultPickupFee,
+  defaultOtherDeliveryFee,
+} from "@/lib/settings";
+import { BankLogo } from "@/components/bank-logo";
 
 const governorates = [
   "صنعاء",
@@ -55,6 +64,9 @@ function CheckoutPage() {
   const accounts = settings.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts;
   const pickupAddress = settings.pickup_address || defaultPickupAddress;
   const whatsappNumber = settings.whatsapp_number || defaultWhatsAppNumber;
+  const adenDeliveryFee = settings.aden_delivery_fee || defaultAdenDeliveryFee;
+  const pickupDeliveryFee = settings.pickup_delivery_fee || defaultPickupFee;
+  const otherDeliveryFee = settings.other_delivery_fee || defaultOtherDeliveryFee;
 
   // Auth State
   const [user, setUser] = useState<any>(null);
@@ -356,28 +368,34 @@ function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setAdenMethod("home")}
-                    className={`flex items-center gap-3 rounded-2xl border p-4 text-start transition-colors ${
-                      adenMethod === "home" ? "border-secondary bg-secondary/10" : "bg-background"
+                    className={`flex items-start gap-3 rounded-2xl border p-4 text-start transition-all ${
+                      adenMethod === "home" ? "border-secondary bg-secondary/10 shadow-xs" : "bg-background"
                     }`}
                   >
-                    <MapPin className="h-5 w-5 shrink-0 text-secondary" />
+                    <MapPin className="h-5 w-5 shrink-0 text-secondary mt-0.5" />
                     <div>
-                      <div className="text-sm font-bold text-primary">توصيل للمنزل</div>
-                      <div className="text-xs text-muted-foreground">إجباري تحديد إحداثيات الموقع</div>
+                      <div className="text-sm font-bold text-primary">توصيل للمنزل - عدن</div>
+                      <div className="text-xs text-muted-foreground">إجباري تحديد إحداثيات الموقع (GPS)</div>
+                      <div className="mt-2 inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300/40">
+                        التوصيل: {adenDeliveryFee}
+                      </div>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setAdenMethod("pickup")}
-                    className={`flex items-center gap-3 rounded-2xl border p-4 text-start transition-colors ${
-                      adenMethod === "pickup" ? "border-secondary bg-secondary/10" : "bg-background"
+                    className={`flex items-start gap-3 rounded-2xl border p-4 text-start transition-all ${
+                      adenMethod === "pickup" ? "border-secondary bg-secondary/10 shadow-xs" : "bg-background"
                     }`}
                   >
-                    <Store className="h-5 w-5 shrink-0 text-secondary" />
+                    <Store className="h-5 w-5 shrink-0 text-secondary mt-0.5" />
                     <div>
                       <div className="text-sm font-bold text-primary">استلام من نقطة الاستلام</div>
                       <div className="text-xs text-muted-foreground">الحجاز الجديد محل أضواء</div>
+                      <div className="mt-2 inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-300/40">
+                        التوصيل: {pickupDeliveryFee} (0 ر.ي)
+                      </div>
                     </div>
                   </button>
                 </div>
@@ -416,7 +434,12 @@ function CheckoutPage() {
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-secondary/30 bg-secondary/15 p-4">
-                    <div className="text-xs font-bold text-secondary">نقطة الاستلام المحجوزة لك:</div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-secondary">نقطة الاستلام المحجوزة لك:</div>
+                      <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
+                        استلام مجاني
+                      </span>
+                    </div>
                     <div className="mt-1 font-extrabold text-sm text-primary">{pickupAddress}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       يمكنك استلام طلبك من الفرع يومياً خلال ساعات العمل الرسمية فور تأكيد الحوالة.
@@ -429,6 +452,13 @@ function CheckoutPage() {
             {/* Other Governorates Options */}
             {region === "other" && (
               <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-center justify-between">
+                  <div className="text-xs font-bold text-amber-900">رسوم شحن المحافظات التقديرية:</div>
+                  <span className="rounded-full bg-amber-600 px-2.5 py-1 text-xs font-extrabold text-white">
+                    {otherDeliveryFee}
+                  </span>
+                </div>
+
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-bold text-muted-foreground">اختر المحافظة</span>
                   <select
@@ -447,7 +477,7 @@ function CheckoutPage() {
                 <textarea
                   value={form.notes}
                   onChange={set("notes")}
-                  placeholder="اكتب العنوان بالتفصيل واسم شركة النقل المفضلة إن وجدت"
+                  placeholder="اكتب العنوان بالتفصيل واسم شركة النقل المفضلة إن وجدت (مثلاً: البراق، راحة، الرويشان)"
                   className="min-h-20 w-full rounded-2xl border bg-background p-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -459,20 +489,31 @@ function CheckoutPage() {
               <CreditCard className="h-4 w-4 text-secondary" /> 3. الدفع بالتحويل البنكي
             </h2>
             <p className="mb-4 text-xs text-muted-foreground">
-              حوّل إجمالي المبلغ على أحد الحسابات الرسمية التالية ثم عبّئ بيانات الحوالة.
+              حوّل إجمالي المبلغ على أحد الحسابات أو المحافظ الرسمية التالية ثم عبّئ بيانات الحوالة.
             </p>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {accounts.map((a) => (
-                <div key={a.bank} className="rounded-2xl border bg-background p-4">
-                  <div className="text-sm font-bold text-primary">{a.bank}</div>
-                  <div className="text-xs text-muted-foreground">{a.holder}</div>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="font-mono text-sm font-bold">{a.number}</span>
+              {accounts.map((a, idx) => (
+                <div
+                  key={idx}
+                  className="group relative flex flex-col justify-between rounded-2xl border bg-background p-4 transition-all hover:border-secondary hover:shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <BankLogo bankName={a.bank} logoType={a.logo_type} className="h-10 w-10" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-extrabold text-primary leading-tight">{a.bank}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">{a.holder}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t pt-2.5">
+                    <span className="font-mono text-sm font-black text-primary tracking-wider" dir="ltr">
+                      {a.number}
+                    </span>
                     <button
                       type="button"
                       onClick={() => copy(a.number)}
-                      className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-3 py-1 text-[11px] font-bold text-secondary hover:bg-secondary/25"
+                      className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-3 py-1 text-[11px] font-bold text-secondary hover:bg-secondary/25 transition-colors"
                     >
                       <Copy className="h-3 w-3" /> نسخ
                     </button>
@@ -529,10 +570,43 @@ function CheckoutPage() {
               </div>
             ))}
           </div>
+
+          {/* Shipping Summary Line */}
+          <div className="mt-4 border-t pt-3 space-y-2 text-xs">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>خيار التوصيل:</span>
+              <span className="font-bold text-primary">
+                {region === "aden"
+                  ? adenMethod === "home"
+                    ? "توصيل للمنزل (عدن)"
+                    : "استلام من الفرع"
+                  : `شحن محافظة (${governorate})`}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">رسوم التوصيل:</span>
+              <span
+                className={`font-bold ${
+                  region === "aden" && adenMethod === "pickup" ? "text-emerald-600" : "text-amber-800"
+                }`}
+              >
+                {region === "aden"
+                  ? adenMethod === "home"
+                    ? adenDeliveryFee
+                    : "مجاناً (0 ر.ي)"
+                  : otherDeliveryFee}
+              </span>
+            </div>
+          </div>
+
           <div className="mt-4 flex items-center justify-between border-t pt-4 text-lg font-extrabold text-primary">
-            <span>الإجمالي الكلي</span>
+            <span>إجمالي المنتجات</span>
             <span>{currency === "YER" ? formatPrice(total) : `${totalSar} ريال سعودي`}</span>
           </div>
+
+          <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+            * رسوم التوصيل/الشحن تُدفع لمندوب التوصيل أو شركة النقل عند استلام الطلب.
+          </p>
 
           <motion.button
             whileTap={{ scale: 0.96 }}
