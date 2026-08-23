@@ -28,8 +28,11 @@ import {
   defaultPickupAddress,
   defaultWhatsAppNumber,
   defaultAdenDeliveryFee,
+  defaultAdenDeliveryFeeSar,
   defaultPickupFee,
+  defaultPickupFeeSar,
   defaultOtherDeliveryFee,
+  defaultOtherDeliveryFeeSar,
 } from "@/lib/settings";
 import { BankLogo } from "@/components/bank-logo";
 
@@ -57,16 +60,28 @@ const governorates = [
 
 function CheckoutPage() {
   const { items, total, totalSar, clear } = useCart();
-  const { currency } = useCurrency();
+  const { currency, setCurrency } = useCurrency();
   const { settings } = useLiveStoreSettings();
   const navigate = useNavigate();
 
   const accounts = settings.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts;
   const pickupAddress = settings.pickup_address || defaultPickupAddress;
   const whatsappNumber = settings.whatsapp_number || defaultWhatsAppNumber;
-  const adenDeliveryFee = settings.aden_delivery_fee || defaultAdenDeliveryFee;
-  const pickupDeliveryFee = settings.pickup_delivery_fee || defaultPickupFee;
-  const otherDeliveryFee = settings.other_delivery_fee || defaultOtherDeliveryFee;
+
+  const adenDeliveryFee =
+    currency === "SAR"
+      ? settings.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar
+      : settings.aden_delivery_fee || defaultAdenDeliveryFee;
+
+  const pickupDeliveryFee =
+    currency === "SAR"
+      ? settings.pickup_delivery_fee_sar || defaultPickupFeeSar
+      : settings.pickup_delivery_fee || defaultPickupFee;
+
+  const otherDeliveryFee =
+    currency === "SAR"
+      ? settings.other_delivery_fee_sar || defaultOtherDeliveryFeeSar
+      : settings.other_delivery_fee || defaultOtherDeliveryFee;
 
   // Auth State
   const [user, setUser] = useState<any>(null);
@@ -312,13 +327,39 @@ function CheckoutPage() {
 
       <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl font-extrabold text-primary sm:text-3xl">إتمام الطلب</h1>
-            {user && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
-                <UserCheck className="h-3.5 w-3.5" /> حساب مسجل
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-2xl bg-muted p-1 border">
+                <button
+                  type="button"
+                  onClick={() => setCurrency("YER")}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all ${
+                    currency === "YER"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ريال يمني (YER)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency("SAR")}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all ${
+                    currency === "SAR"
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  ريال سعودي (SAR)
+                </button>
+              </div>
+              {user && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                  <UserCheck className="h-3.5 w-3.5" /> حساب مسجل
+                </span>
+              )}
+            </div>
           </div>
 
           <section className="rounded-3xl border bg-card p-5">
@@ -394,7 +435,7 @@ function CheckoutPage() {
                       <div className="text-sm font-bold text-primary">استلام من نقطة الاستلام</div>
                       <div className="text-xs text-muted-foreground">الحجاز الجديد محل أضواء</div>
                       <div className="mt-2 inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-300/40">
-                        التوصيل: {pickupDeliveryFee} (0 ر.ي)
+                        التوصيل: {pickupDeliveryFee}
                       </div>
                     </div>
                   </button>
@@ -492,6 +533,19 @@ function CheckoutPage() {
               حوّل إجمالي المبلغ على أحد الحسابات أو المحافظ الرسمية التالية ثم عبّئ بيانات الحوالة.
             </p>
 
+            {/* Amount to transfer banner */}
+            <div className="mb-4 rounded-2xl bg-secondary/15 border border-secondary/30 p-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-bold text-secondary">المبلغ الإجمالي المطلوب تحويله:</div>
+                <div className="text-lg font-black text-primary mt-0.5">
+                  {currency === "YER" ? formatPrice(total) : `${totalSar} ريال سعودي`}
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-xl border font-bold">
+                {currency === "YER" ? `ما يعادل: ${totalSar} ر.س` : `ما يعادل: ${formatPrice(total)}`}
+              </div>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               {accounts.map((a, idx) => (
                 <div
@@ -499,7 +553,7 @@ function CheckoutPage() {
                   className="group relative flex flex-col justify-between rounded-2xl border bg-background p-4 transition-all hover:border-secondary hover:shadow-xs"
                 >
                   <div className="flex items-start gap-3">
-                    <BankLogo bankName={a.bank} logoType={a.logo_type} className="h-10 w-10" />
+                    <BankLogo bankName={a.bank} logoType={a.logo_type} customLogoUrl={a.custom_logo_url} className="h-10 w-10" />
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-extrabold text-primary leading-tight">{a.bank}</div>
                       <div className="text-xs text-muted-foreground mt-0.5 truncate">{a.holder}</div>

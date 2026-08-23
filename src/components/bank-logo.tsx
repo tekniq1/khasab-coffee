@@ -4,10 +4,22 @@ import { Building2, CreditCard, Wallet } from "lucide-react";
 interface BankLogoProps {
   bankName: string;
   logoType?: string;
+  customLogoUrl?: string;
   className?: string;
 }
 
-export function BankLogo({ bankName, logoType, className = "h-9 w-9" }: BankLogoProps) {
+export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w-9" }: BankLogoProps) {
+  if (customLogoUrl) {
+    return (
+      <div
+        className={`flex shrink-0 items-center justify-center rounded-xl bg-card border overflow-hidden shadow-xs p-1 ${className}`}
+        title={bankName}
+      >
+        <img src={customLogoUrl} alt={bankName} className="h-full w-full object-contain rounded-lg" />
+      </div>
+    );
+  }
+
   const name = (bankName || "").toLowerCase();
   const type = (logoType || "").toLowerCase();
 

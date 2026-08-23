@@ -1487,12 +1487,16 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   const [whatsappNumber, setWhatsappNumber] = useState(settings?.whatsapp_number || defaultWhatsAppNumber);
   const [pickupAddress, setPickupAddress] = useState(settings?.pickup_address || defaultPickupAddress);
   const [adenDeliveryFee, setAdenDeliveryFee] = useState(settings?.aden_delivery_fee || defaultAdenDeliveryFee);
+  const [adenDeliveryFeeSar, setAdenDeliveryFeeSar] = useState(settings?.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar);
   const [pickupDeliveryFee, setPickupDeliveryFee] = useState(settings?.pickup_delivery_fee || defaultPickupFee);
+  const [pickupDeliveryFeeSar, setPickupDeliveryFeeSar] = useState(settings?.pickup_delivery_fee_sar || defaultPickupFeeSar);
   const [otherDeliveryFee, setOtherDeliveryFee] = useState(settings?.other_delivery_fee || defaultOtherDeliveryFee);
+  const [otherDeliveryFeeSar, setOtherDeliveryFeeSar] = useState(settings?.other_delivery_fee_sar || defaultOtherDeliveryFeeSar);
   const [accounts, setAccounts] = useState<BankAccount[]>(
     settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts
   );
   const [saving, setSaving] = useState(false);
+  const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
 
   // Add new account row
   const addAccount = () => {
@@ -1504,6 +1508,33 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
     const updated = [...accounts];
     updated[index] = { ...updated[index]!, [field]: value };
     setAccounts(updated);
+  };
+
+  // Handle Bank Logo Upload
+  const handleLogoUpload = async (index: number, file: File) => {
+    try {
+      setUploadingLogoIdx(index);
+      const ext = file.name.split(".").pop() || "png";
+      const filePath = `bank-logos/logo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      if (publicUrlData?.publicUrl) {
+        updateAccount(index, "custom_logo_url", publicUrlData.publicUrl);
+        toast.success("تم رفع وتعيين شعار البنك بنجاح");
+      }
+    } catch (err: any) {
+      console.error("Upload bank logo error:", err);
+      toast.error("تعذر رفع صورة الشعار: " + (err?.message || ""));
+    } finally {
+      setUploadingLogoIdx(null);
+    }
   };
 
   // Remove account row
@@ -1528,8 +1559,11 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
             whatsapp_number: whatsappNumber,
             pickup_address: pickupAddress,
             aden_delivery_fee: adenDeliveryFee,
+            aden_delivery_fee_sar: adenDeliveryFeeSar,
             pickup_delivery_fee: pickupDeliveryFee,
+            pickup_delivery_fee_sar: pickupDeliveryFeeSar,
             other_delivery_fee: otherDeliveryFee,
+            other_delivery_fee_sar: otherDeliveryFeeSar,
             bank_accounts: accounts,
           },
         ],
@@ -1538,7 +1572,7 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
       const { error } = await supabase.from("store_settings").upsert(payload);
       if (error) throw error;
-      toast.success("تم تحديث كافة إعدادات وشحن وحسابات المتجر بنجاح");
+      toast.success("تم تحديث كافة إعدادات وشحن وشعارات وحسابات المتجر بنجاح");
       refetch();
     } catch (err: any) {
       console.error("Save settings error:", err);
@@ -1551,9 +1585,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشحن والحسابات البنكية</h3>
+        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشحن وشعارات الحسابات البنكية</h3>
         <p className="text-xs text-muted-foreground">
-          تحكم كامل وفوري في شريط الإعلانات، رسوم الشحن والتوصيل، نقطة الاستلام، وشعارات وحسابات البنوك
+          تحكم كامل وفوري في شريط الإعلانات، رسوم الشحن (يمني وسعودي)، نقطة الاستلام، ورفع وتعديل شعارات الحسابات البنكية
         </p>
       </div>
 
@@ -1649,71 +1683,104 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
         </div>
 
-        {/* Section 3: Delivery & Shipping Rates */}
+        {/* Section 3: Delivery & Shipping Rates (Dual Currency) */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
           <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
             <Truck className="h-4 w-4 text-secondary" />
-            3. خيارات وتكاليف الشحن والتوصيل (Delivery & Shipping Rates)
+            3. خيارات وتكاليف الشحن والتوصيل (بالريال اليمني والسعودي)
           </h4>
 
           <p className="text-xs text-muted-foreground">
-            تظهر هذه التسعيرات للعملاء في صفحة إتمام الطلب لتوضيح رسوم الشحن بحسب منطقتهم:
+            تظهر هذه التسعيرات للعملاء وتتغير تلقائياً بحسب العملة المختارة في الموقع (YER أو SAR):
           </p>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <label className="block rounded-2xl border bg-background p-3.5">
-              <span className="text-xs font-bold text-primary block mb-1">توصيل منزلي داخل عدن</span>
-              <input
-                type="text"
-                required
-                value={adenDeliveryFee}
-                onChange={(e) => setAdenDeliveryFee(e.target.value)}
-                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
-                placeholder="1,000 - 5,000 ر.ي"
-              />
-              <span className="text-[10px] text-muted-foreground mt-1 block">
-                مثال: 1,000 - 5,000 ر.ي
-              </span>
-            </label>
+            {/* Aden Delivery */}
+            <div className="rounded-2xl border bg-background p-3.5 space-y-2">
+              <span className="text-xs font-extrabold text-primary block">توصيل منزلي داخل عدن</span>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <input
+                  type="text"
+                  required
+                  value={adenDeliveryFee}
+                  onChange={(e) => setAdenDeliveryFee(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                  placeholder="1,000 - 5,000 ر.ي"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <input
+                  type="text"
+                  value={adenDeliveryFeeSar}
+                  onChange={(e) => setAdenDeliveryFeeSar(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                  placeholder="3 - 12 ر.س"
+                />
+              </label>
+            </div>
 
-            <label className="block rounded-2xl border bg-background p-3.5">
-              <span className="text-xs font-bold text-primary block mb-1">استلام من الفرع (الحجاز)</span>
-              <input
-                type="text"
-                required
-                value={pickupDeliveryFee}
-                onChange={(e) => setPickupDeliveryFee(e.target.value)}
-                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
-                placeholder="مجاناً"
-              />
-              <span className="text-[10px] text-muted-foreground mt-1 block">
-                مثال: مجاناً (0 ر.ي)
-              </span>
-            </label>
+            {/* Pickup Point */}
+            <div className="rounded-2xl border bg-background p-3.5 space-y-2">
+              <span className="text-xs font-extrabold text-primary block">استلام من الفرع (الحجاز)</span>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <input
+                  type="text"
+                  required
+                  value={pickupDeliveryFee}
+                  onChange={(e) => setPickupDeliveryFee(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
+                  placeholder="مجاناً"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <input
+                  type="text"
+                  value={pickupDeliveryFeeSar}
+                  onChange={(e) => setPickupDeliveryFeeSar(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
+                  placeholder="مجاناً"
+                />
+              </label>
+            </div>
 
-            <label className="block rounded-2xl border bg-background p-3.5">
-              <span className="text-xs font-bold text-primary block mb-1">شحن خارج عدن (المحافظات)</span>
-              <input
-                type="text"
-                required
-                value={otherDeliveryFee}
-                onChange={(e) => setOtherDeliveryFee(e.target.value)}
-                className="w-full rounded-xl border bg-card px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
-                placeholder="2,000 - 5,000 ر.ي"
-              />
-              <span className="text-[10px] text-muted-foreground mt-1 block">
-                مثال: 2,000 - 5,000 ر.ي
-              </span>
-            </label>
+            {/* Governorates */}
+            <div className="rounded-2xl border bg-background p-3.5 space-y-2">
+              <span className="text-xs font-extrabold text-primary block">شحن خارج عدن (المحافظات)</span>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <input
+                  type="text"
+                  required
+                  value={otherDeliveryFee}
+                  onChange={(e) => setOtherDeliveryFee(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                  placeholder="2,000 - 5,000 ر.ي"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <input
+                  type="text"
+                  value={otherDeliveryFeeSar}
+                  onChange={(e) => setOtherDeliveryFeeSar(e.target.value)}
+                  className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-amber-900"
+                  placeholder="5 - 12 ر.س"
+                />
+              </label>
+            </div>
           </div>
         </div>
 
-        {/* Section 4: Bank Accounts Management with Logos */}
+        {/* Section 4: Bank Accounts Management with Logos & Upload */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-secondary" />
-              4. الحسابات والمحافظ البنكية والشعارات (Bank Accounts & Logos)
+              4. الحسابات والمحافظ البنكية ورفع وتعديل الشعارات
             </h4>
             <button
               type="button"
@@ -1725,91 +1792,138 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
 
           <p className="text-xs text-muted-foreground">
-            حدد البنك ليظهر شعاره الرسمي تلقائياً للزبون، واكتب رقم الحساب واسم المستفيد:
+            اختر البنك من القائمة لشعاره الرسمي أو ارفع صورة شعار مخصص، واكتب رقم الحساب واسم المستفيد:
           </p>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {accounts.map((acc, idx) => (
               <div
                 key={idx}
-                className="grid gap-3 rounded-2xl border bg-background p-3.5 sm:grid-cols-[auto_1fr_1.2fr_1.1fr_1.1fr_auto] items-center"
+                className="rounded-2xl border bg-background p-4 space-y-3 shadow-xs"
               >
-                {/* Bank Logo Preview */}
-                <div className="pt-2 sm:pt-0">
-                  <BankLogo bankName={acc.bank} logoType={acc.logo_type} className="h-10 w-10" />
+                <div className="grid gap-3 sm:grid-cols-[auto_1.1fr_1.2fr_1.1fr_1.1fr_auto] items-center">
+                  {/* Bank Logo Preview */}
+                  <div className="pt-2 sm:pt-0">
+                    <BankLogo
+                      bankName={acc.bank}
+                      logoType={acc.logo_type}
+                      customLogoUrl={acc.custom_logo_url}
+                      className="h-11 w-11"
+                    />
+                  </div>
+
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">نوع وشعار البنك</span>
+                    <select
+                      value={acc.logo_type || "other"}
+                      onChange={(e) => {
+                        const selectedVal = e.target.value;
+                        const opt = availableBankOptions.find((o) => o.id === selectedVal);
+                        const updated = [...accounts];
+                        updated[idx] = {
+                          ...updated[idx]!,
+                          logo_type: selectedVal,
+                          bank: opt && selectedVal !== "other" ? opt.name : updated[idx]!.bank,
+                        };
+                        setAccounts(updated);
+                      }}
+                      className="w-full rounded-xl border bg-card px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                    >
+                      {availableBankOptions.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم البنك المعروض</span>
+                    <input
+                      type="text"
+                      required
+                      value={acc.bank}
+                      onChange={(e) => updateAccount(idx, "bank", e.target.value)}
+                      className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                      placeholder="مثال: بنك الكريمي"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">رقم الحساب / المحفظة</span>
+                    <input
+                      type="text"
+                      required
+                      value={acc.number}
+                      onChange={(e) => updateAccount(idx, "number", e.target.value)}
+                      className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-mono font-bold"
+                      placeholder="1234567890"
+                      dir="ltr"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم صاحب الحساب</span>
+                    <input
+                      type="text"
+                      required
+                      value={acc.holder}
+                      onChange={(e) => updateAccount(idx, "holder", e.target.value)}
+                      className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="محمصة خصب للقهوة"
+                    />
+                  </label>
+
+                  <div className="flex items-center justify-end pt-2 sm:pt-0">
+                    <button
+                      type="button"
+                      onClick={() => removeAccount(idx)}
+                      className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                      title="حذف هذا الحساب"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">نوع وشعار البنك</span>
-                  <select
-                    value={acc.logo_type || "other"}
-                    onChange={(e) => {
-                      const selectedVal = e.target.value;
-                      const opt = availableBankOptions.find((o) => o.id === selectedVal);
-                      const updated = [...accounts];
-                      updated[idx] = {
-                        ...updated[idx]!,
-                        logo_type: selectedVal,
-                        bank: opt && selectedVal !== "other" ? opt.name : updated[idx]!.bank,
-                      };
-                      setAccounts(updated);
-                    }}
-                    className="w-full rounded-xl border bg-card px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
-                  >
-                    {availableBankOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {opt.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {/* Custom Logo Upload / URL Options */}
+                <div className="pt-2 border-t flex flex-wrap items-center gap-3 text-xs">
+                  <span className="font-bold text-muted-foreground text-[11px]">تخصيص الشعار:</span>
+                  
+                  {/* File Upload Button */}
+                  <label className="inline-flex items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 font-bold text-primary cursor-pointer hover:bg-muted transition-colors">
+                    <Upload className="h-3.5 w-3.5 text-secondary" />
+                    <span>{uploadingLogoIdx === idx ? "جارِ الرفع…" : "رفع صورة شعار من الجهاز"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingLogoIdx === idx}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(idx, file);
+                      }}
+                    />
+                  </label>
 
-                <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم البنك / المحفظة المعروض</span>
+                  {/* Direct Logo URL */}
                   <input
-                    type="text"
-                    required
-                    value={acc.bank}
-                    onChange={(e) => updateAccount(idx, "bank", e.target.value)}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
-                    placeholder="مثال: بنك الكريمي"
+                    type="url"
+                    value={acc.custom_logo_url || ""}
+                    onChange={(e) => updateAccount(idx, "custom_logo_url", e.target.value)}
+                    placeholder="أو ضع رابط صورة الشعار هنا..."
+                    className="flex-1 min-w-[200px] rounded-xl border bg-card px-3 py-1.5 text-[11px] outline-none focus:ring-2 focus:ring-ring"
                   />
-                </label>
 
-                <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">رقم الحساب / المحفظة</span>
-                  <input
-                    type="text"
-                    required
-                    value={acc.number}
-                    onChange={(e) => updateAccount(idx, "number", e.target.value)}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-mono font-bold"
-                    placeholder="1234567890"
-                    dir="ltr"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم صاحب الحساب</span>
-                  <input
-                    type="text"
-                    required
-                    value={acc.holder}
-                    onChange={(e) => updateAccount(idx, "holder", e.target.value)}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="محمصة خصب للقهوة"
-                  />
-                </label>
-
-                <div className="flex items-center justify-end pt-2 sm:pt-0">
-                  <button
-                    type="button"
-                    onClick={() => removeAccount(idx)}
-                    className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors shrink-0"
-                    title="حذف هذا الحساب"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {acc.custom_logo_url && (
+                    <button
+                      type="button"
+                      onClick={() => updateAccount(idx, "custom_logo_url", "")}
+                      className="text-[11px] font-bold text-destructive hover:underline"
+                    >
+                      إلغاء الشعار المخصص
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
