@@ -50,7 +50,7 @@ import {
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
-import { formatPrice, products as defaultProducts, brandLogo, type Product } from "@/lib/products";
+import { formatPrice, products as defaultProducts, brandLogo, fetchProductsFromSupabase, type Product } from "@/lib/products";
 import {
   parseStoreSettings,
   defaultBankAccounts,
@@ -171,7 +171,6 @@ function AdminPage() {
   // 2. Realtime Orders Query
   const ordersQuery = useQuery({
     queryKey: ["admin-orders"],
-    enabled: rolesQuery.data === true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
@@ -182,24 +181,17 @@ function AdminPage() {
     },
   });
 
-  // 3. Products Query
+  // 3. Products Query (Sync with Supabase products table)
   const productsQuery = useQuery({
     queryKey: ["admin-products"],
-    enabled: rolesQuery.data === true,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error || !data || data.length === 0) return defaultProducts;
-      return data.map(mapDbProduct);
+      return await fetchProductsFromSupabase();
     },
   });
 
   // 4. Profiles Query (Customers)
   const customersQuery = useQuery({
     queryKey: ["admin-customers"],
-    enabled: rolesQuery.data === true,
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles").select("*");
       if (error) return [];
@@ -210,9 +202,13 @@ function AdminPage() {
   // 5. Store Settings Query
   const settingsQuery = useQuery({
     queryKey: ["admin-store-settings"],
-    enabled: rolesQuery.data === true,
     queryFn: async () => {
-      const { data } = await supabase.from("store_settings").select("*").limit(1).maybeSingle();
+      const { data } = await supabase
+        .from("store_settings")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
       return parseStoreSettings(data);
     },
   });
