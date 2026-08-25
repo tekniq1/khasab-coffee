@@ -50,6 +50,7 @@ import {
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
+import { useCurrency } from "@/lib/currency";
 import { formatPrice, products as defaultProducts, brandLogo, fetchProductsFromSupabase, type Product } from "@/lib/products";
 import {
   parseStoreSettings,
@@ -289,6 +290,7 @@ function AdminPage() {
     );
   }
 
+  const { currency, setCurrency } = useCurrency();
   const allOrders = ordersQuery.data ?? [];
   const allProducts = productsQuery.data ?? defaultProducts;
   const allCustomers = customersQuery.data ?? [];
@@ -312,7 +314,33 @@ function AdminPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Admin Currency Switcher */}
+          <div className="flex items-center rounded-2xl bg-muted p-1 border">
+            <button
+              type="button"
+              onClick={() => setCurrency("YER")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all ${
+                currency === "YER"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              ريال يمني (YER)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrency("SAR")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-extrabold transition-all ${
+                currency === "SAR"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              ريال سعودي (SAR)
+            </button>
+          </div>
+
           <button
             onClick={() => {
               ordersQuery.refetch();
@@ -388,27 +416,32 @@ function AdminPage() {
    MODULE 1: Analytics & Net Profit Dashboard (التقارير والأرباح)
    ==================================================================== */
 function AnalyticsModule({ orders, products, customers }: { orders: Order[]; products: Product[]; customers: any[] }) {
+  const { currency } = useCurrency();
   const completedOrders = orders.filter((o) => o.status !== "cancelled");
 
   // Revenues and Net Profits
   const totalSalesYer = completedOrders.reduce((sum, o) => sum + (o.total_yer ?? o.total ?? 0), 0);
-  const totalSalesSar = completedOrders.reduce((sum, o) => sum + (o.total_sar ?? 0), 0);
+  const totalSalesSar = completedOrders.reduce((sum, o) => sum + (o.total_sar ?? (o.total_yer ? Math.round(o.total_yer / 400) : 0)), 0);
 
   // Profit calculation (Price - Cost)
   const totalCostYer = completedOrders.reduce((sum, o) => sum + (o.cost_total_yer ?? (o.total_yer || o.total || 0) * 0.6), 0);
   const netProfitYer = Math.max(0, totalSalesYer - totalCostYer);
 
-  const totalCostSar = completedOrders.reduce((sum, o) => sum + (o.cost_total_sar ?? (o.total_sar || 0) * 0.6), 0);
+  const totalCostSar = completedOrders.reduce((sum, o) => sum + (o.cost_total_sar ?? totalSalesSar * 0.6), 0);
   const netProfitSar = Math.max(0, totalSalesSar - totalCostSar);
+
+  const isYer = currency === "YER";
+  const baseSales = isYer ? totalSalesYer : totalSalesSar;
+  const baseProfit = isYer ? netProfitYer : netProfitSar;
 
   // Chart data for daily sales
   const salesChartData = [
-    { name: "الأحد", sales: totalSalesYer * 0.12, profit: netProfitYer * 0.12 },
-    { name: "الإثنين", sales: totalSalesYer * 0.15, profit: netProfitYer * 0.15 },
-    { name: "الثلاثاء", sales: totalSalesYer * 0.18, profit: netProfitYer * 0.18 },
-    { name: "الأربعاء", sales: totalSalesYer * 0.22, profit: netProfitYer * 0.22 },
-    { name: "الخميس", sales: totalSalesYer * 0.25, profit: netProfitYer * 0.25 },
-    { name: "الجمعة", sales: totalSalesYer * 0.08, profit: netProfitYer * 0.08 },
+    { name: "الأحد", sales: Math.round(baseSales * 0.12), profit: Math.round(baseProfit * 0.12) },
+    { name: "الإثنين", sales: Math.round(baseSales * 0.15), profit: Math.round(baseProfit * 0.15) },
+    { name: "الثلاثاء", sales: Math.round(baseSales * 0.18), profit: Math.round(baseProfit * 0.18) },
+    { name: "الأربعاء", sales: Math.round(baseSales * 0.22), profit: Math.round(baseProfit * 0.22) },
+    { name: "الخميس", sales: Math.round(baseSales * 0.25), profit: Math.round(baseProfit * 0.25) },
+    { name: "الجمعة", sales: Math.round(baseSales * 0.08), profit: Math.round(baseProfit * 0.08) },
   ];
 
   // Region Chart data
@@ -460,7 +493,9 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="font-bold text-base text-primary">مسار المبيعات والأرباح (الأسبوع الحاضر)</h3>
-              <p className="text-xs text-muted-foreground">عرض الرسوم البيانية بالريال اليمني</p>
+              <p className="text-xs text-muted-foreground">
+                {isYer ? "عرض الرسوم البيانية بالريال اليمني (YER)" : "عرض الرسوم البيانية بالريال السعودي (SAR)"}
+              </p>
             </div>
             <span className="rounded-full bg-secondary/15 px-3 py-1 text-xs font-bold text-secondary">
               تلقائي
@@ -472,7 +507,7 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
               <AreaChart data={salesChartData}>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} />
                 <YAxis stroke="#888888" fontSize={12} />
-                <Tooltip formatter={(value: any) => [`${formatPrice(Number(value))}`, ""]} />
+                <Tooltip formatter={(value: any) => [isYer ? formatPrice(Number(value)) : `${Number(value).toLocaleString()} ر.س`, ""]} />
                 <Area type="monotone" dataKey="sales" name="المبيعات" stroke="#0E3B43" fill="#0E3B43" fillOpacity={0.15} />
                 <Area type="monotone" dataKey="profit" name="صافي الربح" stroke="#BA7A3B" fill="#BA7A3B" fillOpacity={0.2} />
               </AreaChart>
@@ -522,6 +557,7 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
    MODULE 2: Product & Stock Inventory Management (المنتجات والمخزون)
    ==================================================================== */
 function ProductsModule({ products, refetch }: { products: Product[]; refetch: () => void }) {
+  const { currency } = useCurrency();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -854,8 +890,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                       </span>
                     </td>
                     <td className="p-3.5 font-bold">
-                      <div className="text-primary">{base.yer.toLocaleString()} ر.ي</div>
-                      <div className="text-[11px] text-muted-foreground">{base.sar} ر.س</div>
+                      {currency === "YER" ? (
+                        <>
+                          <div className="text-primary font-black">{base.yer.toLocaleString()} ر.ي</div>
+                          <div className="text-[11px] text-muted-foreground">{base.sar} ر.س</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-primary font-black">{base.sar.toLocaleString()} ر.س</div>
+                          <div className="text-[11px] text-muted-foreground">{base.yer.toLocaleString()} ر.ي</div>
+                        </>
+                      )}
                     </td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
@@ -1171,6 +1216,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
    MODULE 3: Real-Time Orders & Tracking Module (الطلبات والتتبع)
    ==================================================================== */
 function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => void }) {
+  const { currency } = useCurrency();
   const [filter, setFilter] = useState<string>("all");
   const [trackingModalOrder, setTrackingModalOrder] = useState<Order | null>(null);
   const [trackingNote, setTrackingNote] = useState("");
@@ -1289,13 +1335,19 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
                       {it.name} {it.options ? `(${it.options})` : ""} × {it.qty}
                     </span>
                     <span className="font-bold text-foreground">
-                      {formatPrice((it.price_yer || it.price || 0) * it.qty)}
+                      {currency === "YER"
+                        ? formatPrice((it.price_yer || it.price || 0) * it.qty)
+                        : `${((it.price_sar || Math.round((it.price_yer || it.price || 0) / 400)) * it.qty).toLocaleString()} ر.س`}
                     </span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center font-black text-sm text-primary pt-2 border-t mt-2">
-                  <span>الإجمالي</span>
-                  <span>{formatPrice(Number(o.total_yer || o.total || 0))}</span>
+                  <span>الإجمالي الكلي</span>
+                  <span>
+                    {currency === "YER"
+                      ? formatPrice(Number(o.total_yer || o.total || 0))
+                      : `${(o.total_sar || Math.round(Number(o.total_yer || o.total || 0) / 400)).toLocaleString()} ريال سعودي`}
+                  </span>
                 </div>
               </div>
 
@@ -1384,6 +1436,7 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
    MODULE 4: Customers & Purchase History (سجلات العملاء)
    ==================================================================== */
 function CustomersModule({ customers, orders }: { customers: any[]; orders: Order[] }) {
+  const { currency } = useCurrency();
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [search, setSearch] = useState("");
 
@@ -1453,7 +1506,9 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                 <th className="p-3.5 text-start">العميل</th>
                 <th className="p-3.5 text-start">رقم الهاتف</th>
                 <th className="p-3.5 text-start">عدد الطلبات</th>
-                <th className="p-3.5 text-start">إجمالي الإنفاق (YER)</th>
+                <th className="p-3.5 text-start">
+                  {currency === "YER" ? "إجمالي الإنفاق (YER)" : "إجمالي الإنفاق (SAR)"}
+                </th>
                 <th className="p-3.5 text-start">سجل المشتريات</th>
               </tr>
             </thead>
@@ -1467,7 +1522,8 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
               ) : (
                 filtered.map((c) => {
                   const customerOrders = orders.filter((o) => o.user_id === c.id || o.phone === c.phone || o.customer_name === c.full_name);
-                  const totalSpent = customerOrders.reduce((s, o) => s + Number(o.total_yer || o.total || 0), 0);
+                  const totalSpentYer = customerOrders.reduce((s, o) => s + Number(o.total_yer || o.total || 0), 0);
+                  const totalSpentSar = customerOrders.reduce((s, o) => s + Number(o.total_sar || Math.round(Number(o.total_yer || o.total || 0) / 400)), 0);
 
                   return (
                     <tr key={c.id} className="hover:bg-muted/30 transition-colors">
@@ -1482,10 +1538,12 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                       </td>
                       <td className="p-3.5 font-mono font-semibold" dir="ltr">{c.phone || "—"}</td>
                       <td className="p-3.5 font-bold">{customerOrders.length} طلبات</td>
-                      <td className="p-3.5 font-extrabold text-emerald-700">{formatPrice(totalSpent)}</td>
+                      <td className="p-3.5 font-extrabold text-emerald-700">
+                        {currency === "YER" ? formatPrice(totalSpentYer) : `${totalSpentSar.toLocaleString()} ريال سعودي`}
+                      </td>
                       <td className="p-3.5">
                         <button
-                          onClick={() => setSelectedCustomer({ ...c, orders: customerOrders, totalSpent })}
+                          onClick={() => setSelectedCustomer({ ...c, orders: customerOrders, totalSpentYer, totalSpentSar })}
                           className="rounded-full border bg-background px-3.5 py-1.5 text-[11px] font-bold text-primary hover:bg-muted shadow-2xs"
                         >
                           عرض السجل ({customerOrders.length})
@@ -1516,7 +1574,11 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
 
             <div className="rounded-2xl bg-primary/10 p-3.5 text-xs font-bold text-primary mb-4 flex justify-between">
               <span>إجمالي قيمة المشتريات:</span>
-              <span className="font-extrabold text-emerald-700">{formatPrice(selectedCustomer.totalSpent)}</span>
+              <span className="font-extrabold text-emerald-700">
+                {currency === "YER"
+                  ? formatPrice(selectedCustomer.totalSpentYer)
+                  : `${selectedCustomer.totalSpentSar.toLocaleString()} ريال سعودي`}
+              </span>
             </div>
 
             <div className="space-y-3">
@@ -1527,7 +1589,11 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                   <div key={o.id} className="rounded-2xl border p-3.5 text-xs space-y-2 bg-background">
                     <div className="flex justify-between font-bold text-primary">
                       <span>كود الطلب: {o.code}</span>
-                      <span className="font-extrabold text-emerald-700">{formatPrice(Number(o.total_yer || o.total || 0))}</span>
+                      <span className="font-extrabold text-emerald-700">
+                        {currency === "YER"
+                          ? formatPrice(Number(o.total_yer || o.total || 0))
+                          : `${(o.total_sar || Math.round(Number(o.total_yer || o.total || 0) / 400)).toLocaleString()} ريال سعودي`}
+                      </span>
                     </div>
                     <div className="text-[11px] text-muted-foreground flex justify-between">
                       <span>التاريخ: {new Date(o.created_at).toLocaleDateString("ar")}</span>
@@ -1537,7 +1603,11 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                       {o.items.map((it, idx) => (
                         <div key={idx} className="flex justify-between">
                           <span>{it.name} × {it.qty}</span>
-                          <span>{formatPrice((it.price_yer || it.price || 0) * it.qty)}</span>
+                          <span>
+                            {currency === "YER"
+                              ? formatPrice((it.price_yer || it.price || 0) * it.qty)
+                              : `${((it.price_sar || Math.round((it.price_yer || it.price || 0) / 400)) * it.qty).toLocaleString()} ر.س`}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -2185,6 +2255,21 @@ function StatCard({
   subText: string;
   highlight?: boolean;
 }) {
+  const { currency } = useCurrency();
+
+  const isYer = currency === "YER";
+  const primaryDisplay = valueRaw
+    ? valueRaw
+    : isYer
+      ? formatPrice(valueYer ?? 0)
+      : `${(valueSar ?? 0).toLocaleString()} ريال سعودي`;
+
+  const secondaryDisplay = !valueRaw
+    ? isYer
+      ? `${(valueSar ?? 0).toLocaleString()} ريال سعودي (SAR)`
+      : formatPrice(valueYer ?? 0)
+    : null;
+
   return (
     <div
       className={`rounded-3xl border p-5 shadow-xs transition-transform hover:scale-[1.01] ${
@@ -2199,13 +2284,9 @@ function StatCard({
       </div>
 
       <div className="mt-3">
-        {valueRaw ? (
-          <div className="text-2xl font-black text-primary">{valueRaw}</div>
-        ) : (
-          <div className="space-y-0.5">
-            <div className="text-xl font-black text-primary">{formatPrice(valueYer ?? 0)}</div>
-            <div className="text-xs font-bold text-secondary">{valueSar ?? 0} SAR</div>
-          </div>
+        <div className="text-2xl font-black text-primary">{primaryDisplay}</div>
+        {secondaryDisplay && (
+          <div className="text-xs font-bold text-secondary mt-1">{secondaryDisplay}</div>
         )}
       </div>
 
