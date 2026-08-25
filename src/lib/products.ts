@@ -299,22 +299,25 @@ export const mapDbProduct = (row: any): Product => {
 
 export const fetchProductsFromSupabase = async (): Promise<Product[]> => {
   try {
-    const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (error || !data || data.length === 0) {
-      return products;
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Fetch products error from Supabase:", error);
+      return [];
     }
-    const dbMapped = data.map(mapDbProduct);
-    // Combine dbMapped with any hardcoded ones not in DB by slug
-    const dbSlugs = new Set(dbMapped.map((p) => p.slug));
-    const remaining = products.filter((p) => !dbSlugs.has(p.slug));
-    return [...dbMapped, ...remaining];
-  } catch {
-    return products;
+    if (!data) return [];
+    return data.map(mapDbProduct);
+  } catch (err) {
+    console.error("Error in fetchProductsFromSupabase:", err);
+    return [];
   }
 };
 
 export function useLiveProducts() {
-  const [items, setItems] = useState<Product[]>(products);
+  const [items, setItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -322,7 +325,7 @@ export function useLiveProducts() {
       const data = await fetchProductsFromSupabase();
       setItems(data);
     } catch {
-      setItems(products);
+      setItems([]);
     } finally {
       setLoading(false);
     }

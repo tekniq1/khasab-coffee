@@ -8,20 +8,6 @@ import { supabase } from "@/lib/supabase";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { formatPrice } from "@/lib/products";
-
-export const Route = createFileRoute("/checkout")({
-  head: () => ({
-    meta: [
-      { title: "إتمام الطلب — محمصة خصب" },
-      {
-        name: "description",
-        content: "أكمل طلبك من محمصة خصب: توصيل داخل عدن أو للمحافظات ودفع بالتحويل البنكي.",
-      },
-    ],
-  }),
-  component: CheckoutPage,
-});
-
 import {
   useLiveStoreSettings,
   defaultBankAccounts,
@@ -35,6 +21,19 @@ import {
   defaultOtherDeliveryFeeSar,
 } from "@/lib/settings";
 import { BankLogo } from "@/components/bank-logo";
+
+export const Route = createFileRoute("/checkout")({
+  head: () => ({
+    meta: [
+      { title: "إتمام الطلب — محمصة خصب" },
+      {
+        name: "description",
+        content: "أكمل طلبك من محمصة خصب: توصيل داخل عدن أو للمحافظات ودفع بالتحويل البنكي.",
+      },
+    ],
+  }),
+  component: CheckoutPage,
+});
 
 const governorates = [
   "صنعاء",

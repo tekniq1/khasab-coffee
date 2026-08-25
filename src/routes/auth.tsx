@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, LockKeyhole, UserCheck, ShieldAlert } from "lucide-react";
+import { Loader2, LockKeyhole } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";

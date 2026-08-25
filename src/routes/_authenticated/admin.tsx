@@ -1,19 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   BarChart3,
-  CheckCircle2,
   ChevronDown,
   CreditCard,
   DollarSign,
-  Download,
   Edit,
   Eye,
   EyeOff,
-  Globe,
   Image as ImageIcon,
-  Layers,
   LogOut,
   MapPin,
   Package,
@@ -21,7 +16,6 @@ import {
   Plus,
   Receipt,
   RefreshCcw,
-  Search,
   ShieldCheck,
   ShoppingBag,
   Sliders,
@@ -29,7 +23,6 @@ import {
   Trash2,
   Truck,
   Upload,
-  UserCheck,
   Users,
   X,
 } from "lucide-react";
@@ -37,8 +30,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   Cell,
   Pie,
   PieChart,
@@ -292,7 +283,7 @@ function AdminPage() {
 
   const { currency, setCurrency } = useCurrency();
   const allOrders = ordersQuery.data ?? [];
-  const allProducts = productsQuery.data ?? defaultProducts;
+  const allProducts = productsQuery.data ?? [];
   const allCustomers = customersQuery.data ?? [];
 
   return (
@@ -863,7 +854,16 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               </tr>
             </thead>
             <tbody className="divide-y">
-              {(products || []).filter(Boolean).map((p) => {
+              {(products || []).filter(Boolean).length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                    <Package className="mx-auto h-8 w-8 text-secondary mb-2 opacity-60" />
+                    <p className="font-bold text-sm text-primary">لا توجد منتجات مسجلة في قاعدة البيانات حالياً</p>
+                    <p className="text-xs text-muted-foreground mt-1">اضغط على زر "إضافة منتج جديد" بالأعلى لإضافة المحصول أو الأداة وسيظهر فوراً بالمتجر.</p>
+                  </td>
+                </tr>
+              ) : (
+                (products || []).filter(Boolean).map((p) => {
                 const base = (p.variants && Array.isArray(p.variants) && p.variants[0]) ? p.variants[0] : { yer: 0, sar: 0 };
                 const stock = p.stockQuantity ?? 50;
                 const isLow = stock <= (p.lowStockThreshold ?? 5);
@@ -963,7 +963,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
