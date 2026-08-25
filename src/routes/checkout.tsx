@@ -619,7 +619,7 @@ function CheckoutPage() {
                   {i.name} <span className="text-muted-foreground">({i.options ?? ""}) ×{i.qty}</span>
                 </span>
                 <span className="shrink-0 font-semibold">
-                  {currency === "YER" ? formatPrice(i.price * i.qty) : `${i.priceSar * i.qty} SAR`}
+                  {currency === "YER" ? formatPrice(i.price * i.qty) : `${(i.priceSar * i.qty).toLocaleString()} ريال سعودي`}
                 </span>
               </div>
             ))}

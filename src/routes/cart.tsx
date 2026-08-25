@@ -70,7 +70,7 @@ function CartPage() {
                     <div className="truncate text-xs text-muted-foreground">{i.options}</div>
                   )}
                   <div className="mt-1 text-sm font-semibold text-foreground">
-                    {currency === "YER" ? formatPrice(i.price) : `${i.priceSar} SAR`}
+                    {currency === "YER" ? formatPrice(i.price) : `${i.priceSar.toLocaleString()} ريال سعودي`}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">

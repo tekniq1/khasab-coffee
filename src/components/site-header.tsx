@@ -200,6 +200,11 @@ export function SiteHeader() {
                       <div className="font-bold text-sm text-primary">{p.name}</div>
                       <div className="truncate text-xs text-muted-foreground">{p.short}</div>
                     </div>
+                    {p.variants && p.variants[0] && (
+                      <div className="text-xs font-bold text-secondary shrink-0">
+                        {currency === "YER" ? `${p.variants[0].yer.toLocaleString()} ر.ي` : `${p.variants[0].sar} ر.س`}
+                      </div>
+                    )}
                   </button>
                 ))
               )}

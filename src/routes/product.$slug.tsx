@@ -146,7 +146,7 @@ function ProductPage() {
                         variant.label === v.label ? "bg-primary text-primary-foreground shadow-sm" : "bg-card"
                       }`}
                     >
-                      {v.label} ({v.sar} SAR)
+                      {v.label} ({price(v)})
                     </button>
                   ))}
                 </div>
