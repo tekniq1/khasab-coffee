@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
 import { brandLogo, categories, searchProducts, useLiveProducts } from "@/lib/products";
+import { useLiveStoreSettings } from "@/lib/settings";
 
 const navLinks = [
   { to: "/", label: "الرئيسية" },
@@ -18,10 +19,14 @@ export function SiteHeader() {
   const { count } = useCart();
   const { currency, toggle } = useCurrency();
   const { products: liveProducts } = useLiveProducts();
+  const { settings } = useLiveStoreSettings();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+
+  const storeName = settings.store_name || "محمصة خصب";
+  const logoSrc = settings.logo_url || brandLogo;
 
   const results = searchProducts(query, liveProducts);
 
@@ -40,9 +45,9 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50">
       <Marquee />
       <div className="glass-card rounded-none border-x-0 border-t-0">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
           <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger className="rounded-xl p-2 text-primary transition-colors hover:bg-muted md:hidden">
+            <SheetTrigger className="rounded-xl p-1.5 sm:p-2 text-primary transition-colors hover:bg-muted md:hidden shrink-0">
               <Menu className="h-5 w-5" />
               <span className="sr-only">القائمة</span>
             </SheetTrigger>
@@ -74,16 +79,16 @@ export function SiteHeader() {
             </SheetContent>
           </Sheet>
 
-          <Link to="/" className="flex min-w-0 items-center gap-2.5">
+          <Link to="/" className="flex shrink-0 items-center gap-2">
             <img
-              src={brandLogo}
-              alt="شعار محمصة خصب"
-              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/20"
+              src={logoSrc}
+              alt={`شعار ${storeName}`}
+              className="h-9 w-9 sm:h-11 sm:w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/20 bg-background"
               width={44}
               height={44}
             />
-            <span className="truncate text-lg font-extrabold tracking-tight text-primary sm:text-xl">
-              محمصة خصب
+            <span className="text-sm sm:text-xl font-black tracking-tight text-primary whitespace-nowrap">
+              {storeName}
             </span>
           </Link>
 
@@ -100,11 +105,12 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <div className="ms-auto flex items-center gap-2 md:ms-0">
+          <div className="ms-auto flex items-center gap-1.5 sm:gap-2 md:ms-0">
             {/* Search Trigger */}
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 rounded-full border bg-background px-3.5 py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              className="flex items-center gap-2 rounded-full border bg-background p-2 sm:px-3.5 sm:py-2 text-xs text-muted-foreground transition-colors hover:border-primary hover:text-primary shrink-0"
+              title="بحث عن منتج"
             >
               <Search className="h-4 w-4" />
               <span className="hidden sm:inline">ابحث عن منتج…</span>
@@ -114,16 +120,17 @@ export function SiteHeader() {
             <button
               onClick={toggle}
               title="تغيير العملة"
-              className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-bold text-primary transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border bg-card px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-primary transition-colors hover:bg-muted shrink-0"
             >
               <Globe className="h-3.5 w-3.5 text-secondary" />
-              <span>{currency === "YER" ? "ريال يمني (YER)" : "ريال سعودي (SAR)"}</span>
+              <span className="hidden sm:inline">{currency === "YER" ? "ريال يمني (YER)" : "ريال سعودي (SAR)"}</span>
+              <span className="inline sm:hidden">{currency === "YER" ? "ر.ي" : "ر.س"}</span>
             </button>
 
             {/* Cart Icon */}
             <Link
               to="/cart"
-              className="relative inline-flex items-center gap-2 rounded-full bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03]"
+              className="relative inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-primary px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-primary-foreground transition-transform hover:scale-[1.03] shrink-0"
             >
               <ShoppingBag className="h-4 w-4" />
               <span className="hidden sm:inline">السلة</span>

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   CreditCard,
   DollarSign,
+  Download,
   Edit,
   Eye,
   EyeOff,
@@ -49,12 +50,13 @@ import {
 import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
-import { formatPrice, products as defaultProducts, type Product } from "@/lib/products";
+import { formatPrice, products as defaultProducts, brandLogo, type Product } from "@/lib/products";
 import {
   parseStoreSettings,
   defaultBankAccounts,
   defaultPickupAddress,
   defaultWhatsAppNumber,
+  defaultStoreName,
   defaultAdenDeliveryFee,
   defaultPickupFee,
   defaultOtherDeliveryFee,
@@ -127,25 +129,42 @@ function AdminPage() {
   const [activeTab, setActiveTab] = useState<"analytics" | "products" | "orders" | "customers" | "store" | "security">("analytics");
   const [realtimeActive, setRealtimeActive] = useState(false);
 
-  // 1. RBAC Auth Query
+  // 1. RBAC Auth Query (With auto-healing for owner account)
   const rolesQuery = useQuery({
     queryKey: ["is-admin"],
     queryFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return false;
-      if (userData.user.email === "gfyhhgftyj@gmail.com") return true;
+
+      const isOwner =
+        userData.user.email === "tekniq1011@gmail.com" ||
+        userData.user.email === "gfyhhgftyj@gmail.com" ||
+        userData.user.user_metadata?.role === "admin";
+
+      if (isOwner) {
+        // Auto-heal admin role in user_roles table so Postgres RLS policies allow full CRUD
+        try {
+          await supabase
+            .from("user_roles")
+            .upsert({ user_id: userData.user.id, role: "admin" }, { onConflict: "user_id" });
+        } catch {
+          // ignore
+        }
+        return true;
+      }
+
       try {
         const { data } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", userData.user.id)
-          .eq("role", "admin")
           .maybeSingle();
-        if (data) return true;
-      } catch {
-        /* fallback to logged-in user */
+
+        return data?.role === "admin";
+      } catch (err) {
+        console.error("RBAC check error:", err);
+        return false;
       }
-      return true;
     },
   });
 
@@ -198,10 +217,10 @@ function AdminPage() {
     },
   });
 
-  // Setup Supabase Realtime Subscription for Orders
+  // Setup Supabase Realtime Subscription for Orders, Products & Settings
   useEffect(() => {
     if (!rolesQuery.data) return;
-    const chId = `orders-realtime-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const chId = `admin-realtime-${Date.now()}`;
     const channel = supabase
       .channel(chId)
       .on(
@@ -209,8 +228,25 @@ function AdminPage() {
         { event: "*", schema: "public", table: "orders" },
         (payload) => {
           setRealtimeActive(true);
-          toast.info(`تحديث جديد في الطلبات (${payload.eventType})`);
+          toast.info(`تحديث في الطلبات (${payload.eventType})`);
           qc.invalidateQueries({ queryKey: ["admin-orders"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        (payload) => {
+          setRealtimeActive(true);
+          toast.info(`تحديث لحظي في المنتجات والمخزون (${payload.eventType})`);
+          qc.invalidateQueries({ queryKey: ["admin-products"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_settings" },
+        () => {
+          setRealtimeActive(true);
+          qc.invalidateQueries({ queryKey: ["admin-store-settings"] });
         }
       )
       .subscribe();
@@ -678,21 +714,42 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       refetch();
     } catch (err: any) {
       console.error("Save product error:", err);
-      toast.error(err?.message || "حدث خطأ أثناء حفظ بيانات المنتج");
+      toast.error(err?.message || "حدث خطأ أثناء حفظ بيانات المنتج (تأكد من وجود صلاحية admin في جدول user_roles)");
     }
   };
 
   const toggleActive = async (p: Product) => {
     try {
-      const { error } = await supabase
-        .from("products")
-        .update({ is_active: !(p.isActive ?? true) })
-        .eq("slug", p.slug);
+      const nextActive = !(p.isActive ?? true);
+      const finalImage = p.image || defaultProducts[0]?.image || "";
+      const payload = {
+        slug: p.slug,
+        name: p.name,
+        category: p.category,
+        short: p.short || "",
+        description: p.description || "",
+        stock_quantity: p.stockQuantity ?? 50,
+        low_stock_threshold: p.lowStockThreshold ?? 5,
+        cost_price_yer: p.costPriceYer ?? 0,
+        cost_price_sar: p.costPriceSar ?? 0,
+        image: finalImage,
+        images: p.images && p.images.length > 0 ? p.images : [finalImage],
+        variants: p.variants,
+        is_coffee: p.isCoffee ?? false,
+        origin: p.origin || "",
+        process: p.process || "",
+        best_seller: p.bestSeller ?? false,
+        is_active: nextActive,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from("products").upsert(payload, { onConflict: "slug" });
       if (error) throw error;
-      toast.success("تم تحديث حالة تفعيل المنتج");
+      toast.success(nextActive ? "تم تفعيل المنتج في المتجر" : "تم تعطيل ظهور المنتج في المتجر");
       refetch();
-    } catch {
-      toast.error("تعذر تحديث حالة المنتج");
+    } catch (err: any) {
+      console.error("Toggle active error:", err);
+      toast.error(err?.message || "تعذر تحديث حالة المنتج");
     }
   };
 
@@ -707,15 +764,39 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       toast.error("تعذر حذف المنتج");
     }
   };
-  const updateQuickStock = async (slug: string, newQty: number) => {
+
+  const updateQuickStock = async (p: Product, newQty: number) => {
     try {
       const qty = Math.max(0, newQty);
-      const { error } = await supabase.from("products").update({ stock_quantity: qty }).eq("slug", slug);
+      const finalImage = p.image || defaultProducts[0]?.image || "";
+      const payload = {
+        slug: p.slug,
+        name: p.name,
+        category: p.category,
+        short: p.short || "",
+        description: p.description || "",
+        stock_quantity: qty,
+        low_stock_threshold: p.lowStockThreshold ?? 5,
+        cost_price_yer: p.costPriceYer ?? 0,
+        cost_price_sar: p.costPriceSar ?? 0,
+        image: finalImage,
+        images: p.images && p.images.length > 0 ? p.images : [finalImage],
+        variants: p.variants,
+        is_coffee: p.isCoffee ?? false,
+        origin: p.origin || "",
+        process: p.process || "",
+        best_seller: p.bestSeller ?? false,
+        is_active: p.isActive ?? true,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from("products").upsert(payload, { onConflict: "slug" });
       if (error) throw error;
       refetch();
-      toast.success("تم تحديث المخزون في قاعدة البيانات");
-    } catch {
-      toast.error("تعذر تحديث المخزون");
+      toast.success(`تم تحديث مخزون (${p.name}) إلى ${qty} في قاعدة البيانات`);
+    } catch (err: any) {
+      console.error("Update stock error:", err);
+      toast.error(err?.message || "تعذر تحديث المخزون");
     }
   };
 
@@ -750,56 +831,42 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               </tr>
             </thead>
             <tbody className="divide-y">
-              {products.map((p) => {
-                const base = p.variants[0] || { yer: 0, sar: 0 };
+              {(products || []).filter(Boolean).map((p) => {
+                const base = (p.variants && Array.isArray(p.variants) && p.variants[0]) ? p.variants[0] : { yer: 0, sar: 0 };
                 const stock = p.stockQuantity ?? 50;
-                const lowLimit = p.lowStockThreshold ?? 5;
-                const isOutOfStock = stock <= 0;
-                const isLowStock = stock > 0 && stock <= lowLimit;
-                const imgCount = (p.images && p.images.length) || 1;
+                const isLow = stock <= (p.lowStockThreshold ?? 5);
+                const imgCount = p.images?.length || (p.image ? 1 : 0);
 
                 return (
-                  <tr key={p.slug} className="hover:bg-muted/30 transition-colors">
-                    <td className="p-3.5 font-bold text-primary flex items-center gap-2.5">
-                      <img src={p.image} alt={p.name} className="h-11 w-11 rounded-xl object-cover border shadow-2xs" />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span>{p.name}</span>
-                          {p.bestSeller && (
-                            <span className="rounded-md bg-secondary/15 px-1.5 py-0.5 text-[10px] font-extrabold text-secondary">
-                              الأكثر مبيعاً ⭐
-                            </span>
-                          )}
+                  <tr key={p.slug} className="transition-colors hover:bg-muted/30">
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={p.image || defaultProducts[0]?.image}
+                          alt={p.name}
+                          className="h-11 w-11 rounded-xl object-cover ring-1 ring-border shrink-0 bg-background"
+                        />
+                        <div>
+                          <div className="font-extrabold text-primary">{p.name}</div>
+                          <div className="text-[11px] text-muted-foreground">{p.short || p.slug}</div>
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-normal">{p.short}</div>
                       </div>
                     </td>
-                    <td className="p-3.5 font-medium">
-                      {p.category === "coffee" ? "قهوة مختصة" : p.category === "tools" ? "أدوات باريستا" : p.category === "matcha" ? "ماتشا" : "بن أخضر"}
+                    <td className="p-3.5">
+                      <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+                        {p.category === "coffee" ? "محاصيل بن" : p.category === "tools" ? "أدوات تحضير" : p.category === "matcha" ? "ماتشا" : "بن أخضر"}
+                      </span>
                     </td>
                     <td className="p-3.5 font-bold">
-                      {formatPrice(base.yer)} / {base.sar} SAR
+                      <div className="text-primary">{base.yer.toLocaleString()} ر.ي</div>
+                      <div className="text-[11px] text-muted-foreground">{base.sar} ر.س</div>
                     </td>
                     <td className="p-3.5">
-                      <div>
-                        {isOutOfStock ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2.5 py-1 text-[11px] font-extrabold text-destructive">
-                            <AlertTriangle className="h-3 w-3" /> نفدت (0)
-                          </span>
-                        ) : isLowStock ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-700">
-                            <AlertTriangle className="h-3 w-3" /> منخفض ({stock})
-                          </span>
-                        ) : (
-                          <span className="font-extrabold text-emerald-700 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                            متوفر ({stock})
-                          </span>
-                        )}
-
-                        {/* Quick Stock +/- adjuster buttons */}
-                        <div className="flex items-center gap-1 mt-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-block h-2 w-2 rounded-full ${isLow ? "bg-destructive animate-ping" : "bg-emerald-500"}`} />
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => updateQuickStock(p.slug, stock - 1)}
+                            onClick={() => updateQuickStock(p, stock - 1)}
                             className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
                             title="تقليل المخزون بمقدار 1"
                           >
@@ -808,11 +875,11 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                           <input
                             type="number"
                             value={stock}
-                            onChange={(e) => updateQuickStock(p.slug, Number(e.target.value))}
+                            onChange={(e) => updateQuickStock(p, Number(e.target.value))}
                             className="w-12 text-center rounded-md border bg-background text-xs py-0.5 font-bold text-emerald-700 outline-none"
                           />
                           <button
-                            onClick={() => updateQuickStock(p.slug, stock + 1)}
+                            onClick={() => updateQuickStock(p, stock + 1)}
                             className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
                             title="زيادة المخزون بمقدار 1"
                           >
@@ -1014,18 +1081,29 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 </label>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <label className="block">
-                  <span className="text-xs font-bold text-muted-foreground">سعر التكلفة YER (لحساب الأرباح)</span>
+                  <span className="text-xs font-bold text-muted-foreground">سعر التكلفة (YER)</span>
                   <input
                     type="number"
                     value={form.costPriceYer}
                     onChange={(e) => setForm({ ...form, costPriceYer: Number(e.target.value) })}
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="مثال: 5000"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold text-muted-foreground">الكمية المتوفرة بالمخزون (Stock) *</span>
+                  <span className="text-xs font-bold text-muted-foreground">سعر التكلفة (SAR)</span>
+                  <input
+                    type="number"
+                    value={form.costPriceSar}
+                    onChange={(e) => setForm({ ...form, costPriceSar: Number(e.target.value) })}
+                    className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="مثال: 12"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-bold text-muted-foreground">الكمية بالمخزون (Stock) *</span>
                   <input
                     type="number"
                     required
@@ -1482,6 +1560,8 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
    MODULE 5: Store Content & Branding Customization (تخصيص المحتوى)
    ==================================================================== */
 function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; refetch: () => void }) {
+  const [storeName, setStoreName] = useState(settings?.store_name || defaultStoreName);
+  const [logoUrl, setLogoUrl] = useState(settings?.logo_url || "");
   const [announcementText, setAnnouncementText] = useState(settings?.announcement_text || "");
   const [enabled, setEnabled] = useState(settings?.announcement_enabled ?? true);
   const [whatsappNumber, setWhatsappNumber] = useState(settings?.whatsapp_number || defaultWhatsAppNumber);
@@ -1497,6 +1577,34 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   );
   const [saving, setSaving] = useState(false);
   const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
+  const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
+
+  // Handle Brand Logo Upload
+  const handleBrandLogoUpload = async (file: File) => {
+    try {
+      setUploadingBrandLogo(true);
+      const ext = file.name.split(".").pop() || "png";
+      const filePath = `brand/logo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      if (publicUrlData?.publicUrl) {
+        setLogoUrl(publicUrlData.publicUrl);
+        toast.success("تم رفع وتعيين شعار المتجر بنجاح");
+      }
+    } catch (err: any) {
+      console.error("Upload brand logo error:", err);
+      toast.error("تعذر رفع صورة الشعار: " + (err?.message || ""));
+    } finally {
+      setUploadingBrandLogo(false);
+    }
+  };
 
   // Add new account row
   const addAccount = () => {
@@ -1559,6 +1667,8 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
         .maybeSingle();
 
       const bannerData = {
+        store_name: storeName,
+        logo_url: logoUrl,
         whatsapp_number: whatsappNumber,
         pickup_address: pickupAddress,
         aden_delivery_fee: adenDeliveryFee,
@@ -1603,31 +1713,102 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشحن وشعارات الحسابات البنكية</h3>
+        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشعار وشريط الإعلانات والحسابات</h3>
         <p className="text-xs text-muted-foreground">
-          تحكم كامل وفوري في شريط الإعلانات، رسوم الشحن (يمني وسعودي)، نقطة الاستلام، ورفع وتعديل شعارات الحسابات البنكية
+          تحكم كامل في اسم وشعار المحمصة في أعلى الموقع، شريط الإعلانات، رسوم التوصيل، ونقطة الاستلام، وحسابات البنوك
         </p>
       </div>
 
-      {/* Live Preview Box */}
-      {enabled && announcementText && (
-        <div className="rounded-3xl border bg-primary p-4 text-primary-foreground shadow-sm">
-          <div className="text-[11px] font-bold text-secondary mb-1 flex items-center gap-1.5">
-            <span>معاينة حية لشريط الإعلانات أعلى الموقع:</span>
+      <form onSubmit={saveSettings} className="space-y-6 max-w-4xl">
+        {/* Section 0: Brand Name & Logo */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
+          <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-secondary" />
+            1. هوية واسم وشعار المحمصة (أعلى شريط الموقع والفوتر)
+          </h4>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-bold text-muted-foreground block mb-1">
+                اسم المحمصة / المتجر الرسمي *
+              </span>
+              <input
+                type="text"
+                required
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                className="w-full rounded-2xl border bg-background px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring font-extrabold text-primary"
+                placeholder="مثال: محمصة خصب"
+              />
+              <span className="text-[10px] text-muted-foreground mt-1 block">
+                يظهر هذا الاسم بجانب الشعار في أعلى شريط الموقع على جميع الشاشات والهواتف
+              </span>
+            </label>
+
+            <div className="space-y-1.5">
+              <span className="text-xs font-bold text-muted-foreground block">
+                شعار المحمصة الرسمي (Brand Logo)
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 rounded-xl border bg-background px-3.5 py-2 text-xs font-bold text-primary cursor-pointer hover:bg-muted transition-colors">
+                  <Upload className="h-3.5 w-3.5 text-secondary" />
+                  <span>{uploadingBrandLogo ? "جارِ الرفع…" : "رفع صورة الشعار من الجهاز"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingBrandLogo}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleBrandLogoUpload(file);
+                    }}
+                  />
+                </label>
+
+                {logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLogoUrl("")}
+                    className="text-xs font-bold text-destructive hover:underline"
+                  >
+                    استعادة الشعار الأصلي
+                  </button>
+                )}
+              </div>
+              <input
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="أو الصق رابط صورة الشعار مباشرة..."
+                className="w-full rounded-xl border bg-background px-3 py-1.5 text-[11px] outline-none focus:ring-2 focus:ring-ring mt-1"
+              />
+            </div>
           </div>
-          <div className="text-xs font-medium flex items-center gap-2">
-            <span className="text-secondary">✦</span>
-            <span>{announcementText}</span>
+
+          {/* Header Preview Bar */}
+          <div className="rounded-2xl border bg-background p-3.5 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={logoUrl || brandLogo}
+                alt="معاينة الشعار"
+                className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20 bg-card shrink-0"
+              />
+              <div>
+                <div className="text-[11px] font-bold text-muted-foreground">معاينة مظهر الشعار والاسم في أعلى الموقع:</div>
+                <div className="text-base font-black text-primary">{storeName || "محمصة خصب"}</div>
+              </div>
+            </div>
+            <span className="hidden sm:inline-flex rounded-full bg-secondary/15 px-3 py-1 text-[11px] font-bold text-secondary">
+              يظهر في الهيدر والفوتر
+            </span>
           </div>
         </div>
-      )}
 
-      <form onSubmit={saveSettings} className="space-y-6 max-w-4xl">
         {/* Section 1: Announcement Bar */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
           <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
             <Sliders className="h-4 w-4 text-secondary" />
-            1. شريط الإعلانات العلوي المتحرك
+            2. شريط الإعلانات العلوي المتحرك
           </h4>
 
           <label className="block">

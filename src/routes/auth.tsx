@@ -38,23 +38,23 @@ function AuthPage() {
   const checkUserRoleAndNavigate = async (user: any) => {
     if (!user) return;
     try {
-      const isAdmin =
-        user.email === "gfyhhgftyj@gmail.com" ||
-        (
-          await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", user.id)
-            .eq("role", "admin")
-            .maybeSingle()
-        ).data?.role === "admin";
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-      if (isAdmin) {
+      const isAdmin = roleData?.role === "admin";
+
+      if (redirect) {
+        navigate({ to: redirect as any });
+      } else if (isAdmin) {
         navigate({ to: "/admin" });
       } else {
-        navigate({ to: (redirect || "/") as any });
+        navigate({ to: "/" });
       }
-    } catch {
+    } catch (err) {
+      console.error("Auth redirect error:", err);
       navigate({ to: (redirect || "/") as any });
     }
   };
@@ -119,50 +119,54 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="rounded-3xl border bg-card p-7 shadow-lg">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
           <LockKeyhole className="h-6 w-6" />
         </div>
         <h1 className="mt-5 text-center text-2xl font-extrabold text-primary">
-          {mode === "signin" ? "تسجيل الدخول" : "إنشاء حساب عميل جديد"}
+          {mode === "signin" ? "أهلاً بك في رحاب خصب ☕" : "انضم إلى مجتمع متذوقي خصب ✨"}
         </h1>
-        <p className="mt-1 text-center text-xs text-muted-foreground">
-          {redirect ? "سجّل دخولك لمتابعة إتمام طلبك في محمصة خصب" : "مرحباً بك في منصة محمصة خصب للقهوة المختصة"}
+        <p className="mt-2 text-center text-xs text-muted-foreground leading-relaxed">
+          {redirect
+            ? "سجّل دخولك لنكمل معاً تجهيز طلبك ونوصل عبق قهوتك إلى باب منزلك"
+            : mode === "signin"
+            ? "طاب يومك.. سجّل دخولك لتستمتع بأعذب نكهات القهوة المختصة وتتابع سلتك"
+            : "يسعدنا انضمامك إلى عائلة عشاق البن الأصيل لنشاركك شغف وتفاصيل الكوب المثالي"}
         </p>
 
-        <form onSubmit={submit} className="mt-6 space-y-3">
+        <form onSubmit={submit} className="mt-6 space-y-4">
           {mode === "signup" && (
             <>
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-                  الاسم الكامل *
+                <span className="mb-1.5 block text-xs font-bold text-primary">
+                  الاسم الكريم *
                 </span>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="أحمد عبد الله"
+                  className="w-full rounded-2xl border bg-background px-4 py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/75"
+                  placeholder="يا مرحباً بك.. كيف تحب أن نناديك؟"
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-                  رقم الهاتف *
+                <span className="mb-1.5 block text-xs font-bold text-primary">
+                  رقم الهاتف للتواصل *
                 </span>
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="77XXXXXXX"
+                  className="w-full rounded-2xl border bg-background px-4 py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/75"
+                  placeholder="رقم هاتفك لنبقيك على علم بخروج طازج محاصيلك (77XXXXXXX)"
                 />
               </label>
             </>
           )}
 
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-muted-foreground">
+            <span className="mb-1.5 block text-xs font-bold text-primary">
               البريد الإلكتروني *
             </span>
             <input
@@ -170,13 +174,13 @@ function AuthPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="name@example.com"
+              className="w-full rounded-2xl border bg-background px-4 py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/75"
+              placeholder="عنوان بريدك لنرسل لك عبق رسائلنا وفواتيرك (name@example.com)"
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold text-muted-foreground">
-              كلمة المرور *
+            <span className="mb-1.5 block text-xs font-bold text-primary">
+              كلمة المرور الآمنة *
             </span>
             <input
               type="password"
@@ -184,26 +188,33 @@ function AuthPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-2xl border bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="••••••••"
+              className="w-full rounded-2xl border bg-background px-4 py-3 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/75"
+              placeholder="رمزك السري الخاص لحفظ ركنك ومشترياتك بأمان"
             />
           </label>
 
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-md disabled:opacity-60 hover:bg-primary/90"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-md disabled:opacity-60 hover:bg-primary/90 transition-transform hover:scale-[1.01]"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-            {mode === "signin" ? "تسجيل الدخول" : "إنشاء حساب العميل"}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : mode === "signin" ? (
+              <span>فنجان قهوتك بانتظارك.. ادخل الآن ☕</span>
+            ) : (
+              <span>ابدأ رحلتك معنا وسجّل حسابك 🌿</span>
+            )}
           </button>
         </form>
 
         <button
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-5 w-full text-center text-xs font-semibold text-secondary hover:underline"
+          className="mt-5 w-full text-center text-xs font-bold text-secondary hover:underline transition-colors block"
         >
-          {mode === "signin" ? "ليس لديك حساب؟ إنشاء حساب عميل جديد" : "لديك حساب بالفعل؟ تسجيل الدخول"}
+          {mode === "signin"
+            ? "جديد في عالم خصب؟ يسعدنا انضمامك وتسجيل حسابك معنا ✨"
+            : "أنت بالفعل من عائلة خصب؟ سجّل دخولك إلى ركنك الخاص هنا ☕"}
         </button>
       </div>
     </div>

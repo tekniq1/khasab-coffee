@@ -365,12 +365,12 @@ function CheckoutPage() {
           <section className="rounded-3xl border bg-card p-5">
             <h2 className="mb-4 text-base font-bold text-primary">1. بيانات العميل</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="الاسم الكامل" value={form.name} onChange={set("name")} placeholder="مثال: أحمد عبد الله" required />
+              <Field label="الاسم الكامل" value={form.name} onChange={set("name")} placeholder="يا مرحباً بك.. كيف تحب أن نناديك؟" required />
               <Field
                 label="رقم الهاتف للتواصل"
                 value={form.phone}
                 onChange={set("phone")}
-                placeholder="مثال: 77XXXXXXX"
+                placeholder="رقم هاتفك لنبقيك على علم بخروج طلبك (77XXXXXXX)"
                 type="tel"
                 required
               />

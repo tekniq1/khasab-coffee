@@ -18,6 +18,7 @@ export const defaultBankAccounts: BankAccount[] = [
 
 export const defaultPickupAddress = "الحجاز الجديد محل أضواء الدور الأول - عدن";
 export const defaultWhatsAppNumber = "967777000000";
+export const defaultStoreName = "محمصة خصب";
 export const defaultAdenDeliveryFee = "1,000 - 5,000 ر.ي";
 export const defaultAdenDeliveryFeeSar = "3 - 12 ر.س";
 export const defaultPickupFee = "مجاناً";
@@ -27,6 +28,8 @@ export const defaultOtherDeliveryFeeSar = "5 - 12 ر.س";
 
 export type StoreSettings = {
   id?: string;
+  store_name?: string;
+  logo_url?: string;
   announcement_text: string;
   announcement_enabled: boolean;
   whatsapp_number: string;
@@ -43,6 +46,8 @@ export type StoreSettings = {
 export function parseStoreSettings(row: any): StoreSettings {
   if (!row) {
     return {
+      store_name: defaultStoreName,
+      logo_url: "",
       announcement_text: "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
       announcement_enabled: true,
       whatsapp_number: defaultWhatsAppNumber,
@@ -81,6 +86,8 @@ export function parseStoreSettings(row: any): StoreSettings {
 
   return {
     id: row.id,
+    store_name: row.store_name || extra.store_name || defaultStoreName,
+    logo_url: row.logo_url || extra.logo_url || "",
     announcement_text: row.announcement_text ?? "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: row.announcement_enabled ?? true,
     whatsapp_number: row.whatsapp_number || extra.whatsapp_number || defaultWhatsAppNumber,
@@ -97,6 +104,8 @@ export function parseStoreSettings(row: any): StoreSettings {
 
 export function useLiveStoreSettings() {
   const [settings, setSettings] = useState<StoreSettings>({
+    store_name: defaultStoreName,
+    logo_url: "",
     announcement_text: "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: true,
     whatsapp_number: defaultWhatsAppNumber,

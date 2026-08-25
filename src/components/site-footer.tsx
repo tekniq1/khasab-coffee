@@ -15,15 +15,15 @@ export function SiteFooter() {
         <div>
           <div className="flex items-center gap-3">
             <img
-              src={brandLogo}
-              alt="شعار خصب"
+              src={settings.logo_url || brandLogo}
+              alt={`شعار ${settings.store_name || "خصب"}`}
               loading="lazy"
-              className="h-14 w-14 rounded-full object-cover"
+              className="h-14 w-14 rounded-full object-cover ring-1 ring-white/20 bg-background"
               width={56}
               height={56}
             />
             <div>
-              <div className="text-xl font-extrabold">خصب</div>
+              <div className="text-xl font-extrabold">{settings.store_name || "خصب"}</div>
               <p className="text-sm opacity-75">محاصيل وأدوات القهوة المختصة</p>
             </div>
           </div>
@@ -71,8 +71,8 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-white/10 py-5 text-center text-xs opacity-60">
         © {new Date().getFullYear()} خصب — جميع الحقوق محفوظة ·{" "}
-        <Link to="/auth" className="hover:text-secondary">
-          دخول الإدارة
+        <Link to="/admin" className="hover:text-secondary font-bold">
+          دخول الإدارة (لوحة التحكم)
         </Link>
       </div>
     </footer>
