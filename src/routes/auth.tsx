@@ -69,32 +69,46 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanName = fullName.trim();
+    const cleanPhone = phone.trim();
+
+    if (!cleanEmail || !cleanPassword) {
+      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === "signup") {
         // Only customer accounts can be created via public sign up
         const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: cleanEmail,
+          password: cleanPassword,
           options: {
             data: {
-              full_name: fullName,
-              phone: phone,
+              full_name: cleanName,
+              phone: cleanPhone,
               role: "customer",
             },
-            emailRedirectTo: `${window.location.origin}${redirect || "/"}`,
+            emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}${redirect || "/"}` : undefined,
           },
         });
         if (error) throw error;
 
         // Upsert into public.profiles
         if (data.user) {
-          await supabase.from("profiles").upsert({
-            id: data.user.id,
-            full_name: fullName,
-            phone: phone,
-            updated_at: new Date().toISOString(),
-          });
+          try {
+            await supabase.from("profiles").upsert({
+              id: data.user.id,
+              full_name: cleanName,
+              phone: cleanPhone,
+              updated_at: new Date().toISOString(),
+            });
+          } catch {
+            // ignore profile upsert error if RLS blocks before session
+          }
         }
 
         toast.success("تم إنشاء حساب العميل بنجاح");
@@ -104,12 +118,16 @@ function AuthPage() {
           toast.info("يرجى تفقّد بريدك الإلكتروني لتأكيد التسجيل");
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPassword,
+        });
         if (error) throw error;
         toast.success("تم تسجيل الدخول بنجاح");
         await checkUserRoleAndNavigate(data.user);
       }
     } catch (err: any) {
+      console.error("Auth submit error:", err);
       toast.error(err?.message || "تعذر إتمام العملية");
     } finally {
       setLoading(false);
