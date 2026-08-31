@@ -11,12 +11,17 @@ const rawUrl =
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
   "https://onibgpjwkqxvxrxoohrz.supabase.co";
 
-const rawKey =
+const envKey =
   (typeof import.meta !== "undefined" &&
     (import.meta.env?.VITE_SUPABASE_ANON_KEY || import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
   (typeof process !== "undefined" &&
-    (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
-  "sb_publishable_8W5UcYn7HiT57Z7KY-5rlw_n1u-TP2C";
+    (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY));
+
+// Force the JWT anon key. If the Vercel environment has the new opaque token (sb_publishable_), 
+// we ignore it because Realtime WebSockets require the JWT anon key.
+const rawKey = (envKey && !envKey.startsWith("sb_publishable_")) 
+  ? envKey 
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaWJncGp3a3F4dnhyeG9vaHJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNDI1NzgsImV4cCI6MjEwMjgxODU3OH0.YJyHinyKC5g5rhZyeWi0ZaWxQrp1SGHs9BxFSsjhGDo";
 
 const supabaseUrl = sanitize(rawUrl);
 const supabaseAnonKey = sanitize(rawKey);
