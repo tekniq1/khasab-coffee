@@ -45,13 +45,10 @@ const customFetch: typeof fetch = (input, init) => {
     }
   }
 
-  // Remove invalid bearer auth when using opaque publishable key format
-  const authHeader = cleanHeaders["Authorization"] || cleanHeaders["authorization"];
-  if (isNewSupabaseApiKey(supabaseAnonKey) && authHeader === `Bearer ${supabaseAnonKey}`) {
-    delete cleanHeaders["Authorization"];
-    delete cleanHeaders["authorization"];
-  }
-
+  // We previously deleted the Authorization header here, but since we aggressively 
+  // sanitize the API key for newlines/whitespace, we don't need to do that anymore.
+  // Deleting it might break PostgREST or Kong which expect the Bearer token.
+  
   cleanHeaders["apikey"] = supabaseAnonKey;
 
   return fetch(input, { ...init, headers: cleanHeaders });
