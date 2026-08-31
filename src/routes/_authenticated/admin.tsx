@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronDown,
@@ -264,19 +264,31 @@ function AdminPage() {
   if (!rolesQuery.data) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-destructive/10 text-destructive">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
           <ShieldCheck className="h-8 w-8" />
         </div>
-        <h1 className="mt-5 text-xl font-extrabold text-primary">غير مصرح بالدخول</h1>
-        <p className="mt-2 text-xs text-muted-foreground">
-          حسابك لا يمتلك رتبة مدير (Admin) للوصول لوحة تحكم محمصة خصب.
+        <h1 className="mt-5 text-xl font-extrabold text-primary">حساب عميل متجر</h1>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+          أهلاً بك! حسابك الحالي مسجل كـ <span className="font-bold text-primary">عميل (Customer)</span>، وهذه الصفحة مخصصة فقط لمدراء المتجر (Admin).
         </p>
-        <button
-          onClick={signOut}
-          className="mt-6 rounded-full bg-primary px-6 py-3 text-xs font-bold text-primary-foreground"
-        >
-          تسجيل الخروج
-        </button>
+        <p className="mt-2 text-xs text-muted-foreground">
+          يمكنك متابعة تصفح أفخر محاصيل القهوة وإكمال سلتك وطلباتك بكل سهولة.
+        </p>
+        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-bold text-primary-foreground shadow-md transition-transform hover:scale-[1.02]"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            <span>متابعة تصفح المتجر ☕</span>
+          </Link>
+          <Link
+            to="/cart"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border bg-background px-6 py-3 text-xs font-bold text-foreground hover:bg-muted"
+          >
+            <span>عرض سلة المشتريات</span>
+          </Link>
+        </div>
       </div>
     );
   }
