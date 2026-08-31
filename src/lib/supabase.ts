@@ -18,9 +18,39 @@ const rawKey =
 const supabaseUrl = sanitize(rawUrl);
 const supabaseAnonKey = sanitize(rawKey);
 
+function isNewSupabaseApiKey(value: string): boolean {
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
+}
+
+const customFetch: typeof fetch = (input, init) => {
+  const headers = new Headers(
+    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined
+  );
+
+  if (init?.headers) {
+    new Headers(init.headers).forEach((value, key) => {
+      if (value !== undefined && value !== null) {
+        headers.set(key, String(value));
+      }
+    });
+  }
+
+  // Remove invalid bearer auth when using opaque publishable key format
+  if (isNewSupabaseApiKey(supabaseAnonKey) && headers.get("Authorization") === `Bearer ${supabaseAnonKey}`) {
+    headers.delete("Authorization");
+  }
+
+  headers.set("apikey", supabaseAnonKey);
+
+  return fetch(input, { ...init, headers });
+};
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: typeof window !== "undefined",
     autoRefreshToken: typeof window !== "undefined",
+  },
+  global: {
+    fetch: customFetch,
   },
 });
