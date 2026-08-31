@@ -1,7 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const sanitize = (val?: string) => (val ? String(val).trim().replace(/^["']|["']$/g, "") : "");
+const sanitize = (val?: string) => {
+  if (!val) return "";
+  return String(val).replace(/[\s"']/g, ""); // Aggressively remove all whitespace, newlines, and quotes
+};
 
 const rawUrl =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
@@ -23,26 +26,35 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 const customFetch: typeof fetch = (input, init) => {
-  const headers = new Headers(
-    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined
-  );
+  const cleanHeaders: Record<string, string> = {};
 
   if (init?.headers) {
-    new Headers(init.headers).forEach((value, key) => {
-      if (value !== undefined && value !== null) {
-        headers.set(key, String(value));
+    const rawHeaders = init.headers;
+    if (rawHeaders instanceof Headers) {
+      rawHeaders.forEach((value, key) => {
+        cleanHeaders[key] = value.replace(/[\r\n]/g, ""); // Strip newlines
+      });
+    } else if (Array.isArray(rawHeaders)) {
+      rawHeaders.forEach(([key, value]) => {
+        cleanHeaders[key] = value.replace(/[\r\n]/g, "");
+      });
+    } else {
+      for (const [key, value] of Object.entries(rawHeaders)) {
+        if (value) cleanHeaders[key] = String(value).replace(/[\r\n]/g, "");
       }
-    });
+    }
   }
 
   // Remove invalid bearer auth when using opaque publishable key format
-  if (isNewSupabaseApiKey(supabaseAnonKey) && headers.get("Authorization") === `Bearer ${supabaseAnonKey}`) {
-    headers.delete("Authorization");
+  const authHeader = cleanHeaders["Authorization"] || cleanHeaders["authorization"];
+  if (isNewSupabaseApiKey(supabaseAnonKey) && authHeader === `Bearer ${supabaseAnonKey}`) {
+    delete cleanHeaders["Authorization"];
+    delete cleanHeaders["authorization"];
   }
 
-  headers.set("apikey", supabaseAnonKey);
+  cleanHeaders["apikey"] = supabaseAnonKey;
 
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers: cleanHeaders });
 };
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
