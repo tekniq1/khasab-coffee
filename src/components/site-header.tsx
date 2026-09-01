@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Globe, Menu, Search, ShoppingBag, X } from "lucide-react";
+import { Globe, Menu, Package, Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { supabase } from "@/lib/supabase";
 import { Marquee } from "@/components/marquee";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCart } from "@/lib/cart";
@@ -24,6 +25,11 @@ export function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
+  }, []);
 
   const storeName = settings.store_name || "محمصة خصب";
   const logoSrc = settings.logo_url || brandLogo;
@@ -63,6 +69,15 @@ export function SiteHeader() {
                     {l.label}
                   </Link>
                 ))}
+                {currentUser && (
+                  <Link
+                    to="/my-orders"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-3 py-2 font-medium text-foreground hover:bg-muted flex items-center gap-2"
+                  >
+                    <Package className="h-4 w-4" /> طلباتي
+                  </Link>
+                )}
                 <div className="mt-4 mb-1 px-3 text-xs text-muted-foreground">التصنيفات</div>
                 {categories.map((c) => (
                   <Link
@@ -103,6 +118,15 @@ export function SiteHeader() {
                 {l.label}
               </Link>
             ))}
+            {currentUser && (
+              <Link
+                to="/my-orders"
+                activeProps={{ className: "bg-muted text-primary font-bold" }}
+                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                طلباتي
+              </Link>
+            )}
           </nav>
 
           <div className="ms-auto flex items-center gap-1.5 sm:gap-2 md:ms-0">

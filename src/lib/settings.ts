@@ -26,6 +26,18 @@ export const defaultPickupFeeSar = "مجاناً";
 export const defaultOtherDeliveryFee = "2,000 - 5,000 ر.ي";
 export const defaultOtherDeliveryFeeSar = "5 - 12 ر.س";
 
+export type HeroBanner = {
+  image: string;
+  title: string;
+  desc: string;
+};
+
+export type SocialLink = {
+  platform: "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "snapchat" | "twitter" | "telegram" | "other";
+  url: string;
+  label?: string;
+};
+
 export type StoreSettings = {
   id?: string;
   store_name?: string;
@@ -41,6 +53,13 @@ export type StoreSettings = {
   other_delivery_fee: string;
   other_delivery_fee_sar?: string;
   bank_accounts: BankAccount[];
+  hero_banners?: HeroBanner[];
+  instagram_handle?: string;
+  about_text?: string;
+  footer_text?: string;
+  about_cards?: { title: string; desc: string }[];
+  categories?: { id: string; name: string }[];
+  social_links?: SocialLink[];
 };
 
 export function parseStoreSettings(row: any): StoreSettings {
@@ -99,6 +118,15 @@ export function parseStoreSettings(row: any): StoreSettings {
     other_delivery_fee: row.other_delivery_fee || extra.other_delivery_fee || defaultOtherDeliveryFee,
     other_delivery_fee_sar: row.other_delivery_fee_sar || extra.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
     bank_accounts: bankAccounts,
+    hero_banners: Array.isArray(row.hero_banners) && row.hero_banners.length > 0 && typeof row.hero_banners[0] === 'object' && row.hero_banners[0]?.image 
+      ? row.hero_banners as HeroBanner[]
+      : [],
+    instagram_handle: row.hero_banners?.[0]?.instagram_handle || extra.instagram_handle || 'khasab',
+    about_text: row.hero_banners?.[0]?.about_text || extra.about_text || '',
+    footer_text: row.hero_banners?.[0]?.footer_text || extra.footer_text || 'مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.',
+    about_cards: row.hero_banners?.[0]?.about_cards || extra.about_cards || [],
+    categories: row.hero_banners?.[0]?.categories || extra.categories || [],
+    social_links: row.hero_banners?.[0]?.social_links || extra.social_links || [],
   };
 }
 
@@ -117,6 +145,13 @@ export function useLiveStoreSettings() {
     other_delivery_fee: defaultOtherDeliveryFee,
     other_delivery_fee_sar: defaultOtherDeliveryFeeSar,
     bank_accounts: defaultBankAccounts,
+    hero_banners: [],
+    instagram_handle: 'khasab',
+    about_text: '',
+    footer_text: 'مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.',
+    about_cards: [],
+    categories: [],
+    social_links: [],
   });
   const [loading, setLoading] = useState(true);
 

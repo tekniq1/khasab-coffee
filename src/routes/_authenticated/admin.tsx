@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronDown,
@@ -23,6 +23,7 @@ import {
   Trash2,
   Truck,
   Upload,
+  Globe,
   Users,
   X,
 } from "lucide-react";
@@ -264,31 +265,19 @@ function AdminPage() {
   if (!rolesQuery.data) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-destructive/10 text-destructive">
           <ShieldCheck className="h-8 w-8" />
         </div>
-        <h1 className="mt-5 text-xl font-extrabold text-primary">حساب عميل متجر</h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          أهلاً بك! حسابك الحالي مسجل كـ <span className="font-bold text-primary">عميل (Customer)</span>، وهذه الصفحة مخصصة فقط لمدراء المتجر (Admin).
-        </p>
+        <h1 className="mt-5 text-xl font-extrabold text-primary">غير مصرح بالدخول</h1>
         <p className="mt-2 text-xs text-muted-foreground">
-          يمكنك متابعة تصفح أفخر محاصيل القهوة وإكمال سلتك وطلباتك بكل سهولة.
+          حسابك لا يمتلك رتبة مدير (Admin) للوصول لوحة تحكم محمصة خصب.
         </p>
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/"
-            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-xs font-bold text-primary-foreground shadow-md transition-transform hover:scale-[1.02]"
-          >
-            <ShoppingBag className="h-4 w-4" />
-            <span>متابعة تصفح المتجر ☕</span>
-          </Link>
-          <Link
-            to="/cart"
-            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border bg-background px-6 py-3 text-xs font-bold text-foreground hover:bg-muted"
-          >
-            <span>عرض سلة المشتريات</span>
-          </Link>
-        </div>
+        <button
+          onClick={signOut}
+          className="mt-6 rounded-full bg-primary px-6 py-3 text-xs font-bold text-primary-foreground"
+        >
+          تسجيل الخروج
+        </button>
       </div>
     );
   }
@@ -422,15 +411,24 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
   const { currency } = useCurrency();
   const completedOrders = orders.filter((o) => o.status !== "cancelled");
 
-  // Revenues and Net Profits
+  // Revenues and Net Profits — only confirmed/delivered orders
   const totalSalesYer = completedOrders.reduce((sum, o) => sum + (o.total_yer ?? o.total ?? 0), 0);
   const totalSalesSar = completedOrders.reduce((sum, o) => sum + (o.total_sar ?? (o.total_yer ? Math.round(o.total_yer / 400) : 0)), 0);
 
-  // Profit calculation (Price - Cost)
-  const totalCostYer = completedOrders.reduce((sum, o) => sum + (o.cost_total_yer ?? (o.total_yer || o.total || 0) * 0.6), 0);
+  // Profit = Sales - Cost (use actual cost if saved, else fallback 60% estimate)
+  const totalCostYer = completedOrders.reduce((sum, o) => {
+    const cost = o.cost_total_yer;
+    if (cost !== null && cost !== undefined && cost > 0) return sum + cost;
+    // Fallback: estimate 60% cost margin
+    return sum + (o.total_yer ?? o.total ?? 0) * 0.6;
+  }, 0);
   const netProfitYer = Math.max(0, totalSalesYer - totalCostYer);
 
-  const totalCostSar = completedOrders.reduce((sum, o) => sum + (o.cost_total_sar ?? totalSalesSar * 0.6), 0);
+  const totalCostSar = completedOrders.reduce((sum, o) => {
+    const cost = o.cost_total_sar;
+    if (cost !== null && cost !== undefined && cost > 0) return sum + cost;
+    return sum + (o.total_sar ?? 0) * 0.6;
+  }, 0);
   const netProfitSar = Math.max(0, totalSalesSar - totalCostSar);
 
   const isYer = currency === "YER";
@@ -579,17 +577,19 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     costPriceSar: 12,
     sellingPriceYer: 9000,
     sellingPriceSar: 22,
-    origin: "كولومبيا",
-    process: "مغسولة",
+    origin: "",
+    process: "",
+    badge: "",
+    notes: [] as string[],
     isCoffee: true,
     bestSeller: false,
-    image: defaultProducts[0]?.image || "",
-    images: [defaultProducts[0]?.image || ""],
+    image: "",
+    images: [] as string[],
+    variants: [] as { label: string; yer: number; sar: number }[],
   });
 
   const openAdd = () => {
     setEditingProduct(null);
-    const initialImg = defaultProducts[0]?.image || "";
     setForm({
       name: "",
       slug: "prod-" + Date.now().toString(36),
@@ -602,20 +602,23 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       costPriceSar: 12,
       sellingPriceYer: 9000,
       sellingPriceSar: 22,
-      origin: "كولومبيا",
-      process: "مغسولة",
+      origin: "",
+      process: "",
+      badge: "",
+      notes: [],
       isCoffee: true,
       bestSeller: false,
-      image: initialImg,
-      images: initialImg ? [initialImg] : [],
+      image: "",
+      images: [],
+      variants: [{ label: "100g", yer: 9000, sar: 22 }],
     });
     setModalOpen(true);
   };
 
   const openEdit = (p: Product) => {
     setEditingProduct(p);
-    const base = p.variants[0] || { yer: 9000, sar: 22 };
-    const imgs = p.images && p.images.length > 0 ? p.images : [p.image];
+    const imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+    const firstVariant = p.variants?.[0] || { yer: 9000, sar: 22 };
     setForm({
       name: p.name,
       slug: p.slug,
@@ -626,14 +629,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       lowStockThreshold: p.lowStockThreshold ?? 5,
       costPriceYer: p.costPriceYer ?? 5000,
       costPriceSar: p.costPriceSar ?? 12,
-      sellingPriceYer: base.yer,
-      sellingPriceSar: base.sar,
+      sellingPriceYer: firstVariant.yer,
+      sellingPriceSar: firstVariant.sar,
       origin: p.origin || "",
       process: p.process || "",
+      badge: (p as any).badge || "",
+      notes: Array.isArray((p as any).notes) ? (p as any).notes : [],
       isCoffee: p.isCoffee ?? false,
       bestSeller: p.bestSeller ?? false,
       image: p.image || imgs[0] || "",
       images: imgs,
+      variants: p.variants && p.variants.length > 0 ? p.variants : [{ label: "100g", yer: firstVariant.yer, sar: firstVariant.sar }],
     });
     setModalOpen(true);
   };
@@ -717,7 +723,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
   const saveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const finalImage = form.image || form.images[0] || defaultProducts[0]?.image;
+      const finalImage = form.image || form.images[0] || "";
+      // Use dynamic variants if provided, otherwise generate from base price
+      const finalVariants = form.variants.length > 0
+        ? form.variants
+        : form.isCoffee
+          ? [
+              { label: "100g", yer: form.sellingPriceYer, sar: form.sellingPriceSar },
+              { label: "200g", yer: Math.round(form.sellingPriceYer * 1.75), sar: Math.round(form.sellingPriceSar * 1.75) },
+            ]
+          : [{ label: "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar }];
+
       const payload = {
         slug: form.slug,
         name: form.name,
@@ -729,14 +745,13 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         cost_price_yer: form.costPriceYer,
         cost_price_sar: form.costPriceSar,
         image: finalImage,
-        images: form.images.length > 0 ? form.images : [finalImage],
-        variants: [
-          { label: form.isCoffee ? "100g" : "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar },
-          ...(form.isCoffee ? [{ label: "200g", yer: form.sellingPriceYer * 1.75, sar: form.sellingPriceSar * 1.75 }] : []),
-        ],
+        images: form.images.length > 0 ? form.images : (finalImage ? [finalImage] : []),
+        variants: finalVariants,
         is_coffee: form.isCoffee,
         origin: form.origin,
         process: form.process,
+        badge: form.badge || null,
+        notes: form.notes.filter(Boolean),
         best_seller: form.bestSeller,
         is_active: true,
       };
@@ -1110,37 +1125,113 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 </label>
               </div>
 
-              {/* Section 3: Pricing and Stock */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-xs font-bold text-muted-foreground">سعر البيع بالريال اليمني (YER) *</span>
-                  <input
-                    type="number"
-                    required
-                    value={form.sellingPriceYer}
-                    onChange={(e) => setForm({ ...form, sellingPriceYer: Number(e.target.value) })}
-                    className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-bold text-muted-foreground">سعر البيع بالريال السعودي (SAR) *</span>
-                  <input
-                    type="number"
-                    required
-                    value={form.sellingPriceSar}
-                    onChange={(e) => setForm({ ...form, sellingPriceSar: Number(e.target.value) })}
-                    className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
-                  />
-                </label>
+
+              {/* Section 3: Dynamic Variants Manager (الأحجام والأسعار) */}
+              <div className="rounded-2xl border bg-muted/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-primary block">الأحجام والأسعار (Variants)</span>
+                    <span className="text-[11px] text-muted-foreground">أضف حجماً واحداً أو أكثر مع السعر المستقل لكل حجم</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, variants: [...form.variants, { label: form.isCoffee ? "250g" : "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar }] })}
+                    className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-3 py-1.5 text-[11px] font-bold text-secondary hover:bg-secondary/25"
+                  >
+                    <Plus className="h-3 w-3" /> إضافة حجم
+                  </button>
+                </div>
+                {form.variants.length === 0 && (
+                  <p className="text-center text-[11px] text-muted-foreground py-2">
+                    لا توجد أحجام — سيتم إنشاء حجم افتراضي عند الحفظ بناءً على السعر المُدخل
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {form.variants.map((v, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={v.label}
+                        onChange={(e) => {
+                          const updated = [...form.variants];
+                          updated[idx] = { ...updated[idx]!, label: e.target.value };
+                          setForm({ ...form, variants: updated });
+                        }}
+                        placeholder="مثال: 100g"
+                        className="w-24 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                      />
+                      <div className="flex-1 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">YER</span>
+                        <input
+                          type="number"
+                          value={v.yer || ""}
+                          onChange={(e) => {
+                            const updated = [...form.variants];
+                            updated[idx] = { ...updated[idx]!, yer: e.target.value ? Number(e.target.value) : ("" as any) };
+                            setForm({ ...form, variants: updated });
+                          }}
+                          className="flex-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                          placeholder="9000"
+                        />
+                      </div>
+                      <div className="flex-1 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">SAR</span>
+                        <input
+                          type="number"
+                          value={v.sar || ""}
+                          onChange={(e) => {
+                            const updated = [...form.variants];
+                            updated[idx] = { ...updated[idx]!, sar: e.target.value ? Number(e.target.value) : ("" as any) };
+                            setForm({ ...form, variants: updated });
+                          }}
+                          className="flex-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                          placeholder="22"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = form.variants.filter((_, i) => i !== idx);
+                          setForm({ ...form, variants: updated });
+                        }}
+                        className="p-1 rounded-lg text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {/* Base price for fallback display */}
+                <div className="grid gap-2 sm:grid-cols-2 pt-1 border-t">
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground">السعر الأساسي YER (لحساب التكلفة)</span>
+                    <input
+                      type="number"
+                      value={form.sellingPriceYer || ""}
+                      onChange={(e) => setForm({ ...form, sellingPriceYer: e.target.value ? Number(e.target.value) : ("" as any) })}
+                      className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground">السعر الأساسي SAR (لحساب التكلفة)</span>
+                    <input
+                      type="number"
+                      value={form.sellingPriceSar || ""}
+                      onChange={(e) => setForm({ ...form, sellingPriceSar: e.target.value ? Number(e.target.value) : ("" as any) })}
+                      className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                    />
+                  </label>
+                </div>
               </div>
 
+              {/* Section 4: Cost & Stock */}
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="block">
                   <span className="text-xs font-bold text-muted-foreground">سعر التكلفة (YER)</span>
                   <input
                     type="number"
-                    value={form.costPriceYer}
-                    onChange={(e) => setForm({ ...form, costPriceYer: Number(e.target.value) })}
+                    value={form.costPriceYer || ""}
+                    onChange={(e) => setForm({ ...form, costPriceYer: e.target.value ? Number(e.target.value) : ("" as any) })}
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: 5000"
                   />
@@ -1149,8 +1240,8 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   <span className="text-xs font-bold text-muted-foreground">سعر التكلفة (SAR)</span>
                   <input
                     type="number"
-                    value={form.costPriceSar}
-                    onChange={(e) => setForm({ ...form, costPriceSar: Number(e.target.value) })}
+                    value={form.costPriceSar || ""}
+                    onChange={(e) => setForm({ ...form, costPriceSar: e.target.value ? Number(e.target.value) : ("" as any) })}
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: 12"
                   />
@@ -1160,9 +1251,52 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   <input
                     type="number"
                     required
-                    value={form.stockQuantity}
-                    onChange={(e) => setForm({ ...form, stockQuantity: Number(e.target.value) })}
+                    value={form.stockQuantity || ""}
+                    onChange={(e) => setForm({ ...form, stockQuantity: e.target.value ? Number(e.target.value) : ("" as any) })}
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
+                  />
+                </label>
+              </div>
+
+              {/* Section 5: Product Info (Origin, Process, Badge, Notes) */}
+              <div className="rounded-2xl border bg-muted/30 p-4 space-y-3">
+                <span className="text-xs font-bold text-primary block">معلومات المنتج (للقهوة المختصة)</span>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground">المنشأ (Origin)</span>
+                    <input
+                      value={form.origin}
+                      onChange={(e) => setForm({ ...form, origin: e.target.value })}
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="مثال: إثيوبيا"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground">المعالجة (Process)</span>
+                    <input
+                      value={form.process}
+                      onChange={(e) => setForm({ ...form, process: e.target.value })}
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="مثال: مغسولة"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[11px] font-bold text-muted-foreground">الشارة (Badge)</span>
+                    <input
+                      value={form.badge}
+                      onChange={(e) => setForm({ ...form, badge: e.target.value })}
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="مثال: جديد"
+                    />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">إيحاءات النكهة (مفصولة بفاصلة)</span>
+                  <input
+                    value={form.notes.join("، ")}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value.split(/[،,]/).map(s => s.trim()).filter(Boolean) })}
+                    className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="مثال: كرز، زهور بيضاء، سكر قصب"
                   />
                 </label>
               </div>
@@ -1653,6 +1787,16 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   const [accounts, setAccounts] = useState<BankAccount[]>(
     settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts
   );
+  // Hero Banners state
+  const [heroBannersEdit, setHeroBannersEdit] = useState<{ image: string; title: string; desc: string }[]>(
+    (settings as any)?.hero_banners_list || []
+  );
+  const [newBanner, setNewBanner] = useState({ image: "", title: "", desc: "" });
+  // About & Footer settings
+  const [instagramHandle, setInstagramHandle] = useState((settings as any)?.instagram_handle || "khasab");
+  const [aboutText, setAboutText] = useState((settings as any)?.about_text || "");
+  const [footerText, setFooterText] = useState((settings as any)?.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.");
+  const [socialLinks, setSocialLinks] = useState<any[]>(settings?.social_links || []);
   const [saving, setSaving] = useState(false);
   const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
   const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
@@ -1756,6 +1900,11 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
         other_delivery_fee: otherDeliveryFee,
         other_delivery_fee_sar: otherDeliveryFeeSar,
         bank_accounts: accounts,
+        instagram_handle: instagramHandle,
+        about_text: aboutText,
+        footer_text: footerText,
+        hero_banners_list: heroBannersEdit,
+        social_links: socialLinks,
       };
 
       const payload: Record<string, any> = {
@@ -1915,11 +2064,222 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
         </div>
 
+        {/* Section 1.5: Hero Banners Manager */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
+          <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
+            <ImageIcon className="h-4 w-4 text-secondary" />
+            3. بانرات الصفحة الرئيسية (Hero Banners)
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            أضف وعدّل البانرات التي تظهر في منتصف الصفحة الرئيسية. كل بانر يحتاج رابط صورة + عنوان + وصف.
+          </p>
+
+          {/* Existing Banners List */}
+          <div className="space-y-3">
+            {heroBannersEdit.map((b, idx) => (
+              <div key={idx} className="rounded-2xl border bg-background p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-primary">البانر {idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => setHeroBannersEdit(heroBannersEdit.filter((_, i) => i !== idx))}
+                    className="p-1 rounded-lg text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="grid gap-2">
+                  <input
+                    type="url"
+                    value={b.image}
+                    onChange={(e) => {
+                      const updated = [...heroBannersEdit];
+                      updated[idx] = { ...updated[idx]!, image: e.target.value };
+                      setHeroBannersEdit(updated);
+                    }}
+                    placeholder="رابط الصورة (URL)..."
+                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <input
+                    type="text"
+                    value={b.title}
+                    onChange={(e) => {
+                      const updated = [...heroBannersEdit];
+                      updated[idx] = { ...updated[idx]!, title: e.target.value };
+                      setHeroBannersEdit(updated);
+                    }}
+                    placeholder="العنوان الكبير..."
+                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <input
+                    type="text"
+                    value={b.desc}
+                    onChange={(e) => {
+                      const updated = [...heroBannersEdit];
+                      updated[idx] = { ...updated[idx]!, desc: e.target.value };
+                      setHeroBannersEdit(updated);
+                    }}
+                    placeholder="الوصف..."
+                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                {b.image && (
+                  <img src={b.image} alt="معاينة" className="h-20 w-full object-cover rounded-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add New Banner */}
+          <div className="rounded-2xl border border-dashed border-secondary/40 p-4 space-y-2">
+            <span className="text-xs font-bold text-secondary block">+ إضافة بانر جديد</span>
+            <input
+              type="url"
+              value={newBanner.image}
+              onChange={(e) => setNewBanner({ ...newBanner, image: e.target.value })}
+              placeholder="رابط الصورة..."
+              className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+            />
+            <input
+              type="text"
+              value={newBanner.title}
+              onChange={(e) => setNewBanner({ ...newBanner, title: e.target.value })}
+              placeholder="العنوان الكبير..."
+              className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+            />
+            <input
+              type="text"
+              value={newBanner.desc}
+              onChange={(e) => setNewBanner({ ...newBanner, desc: e.target.value })}
+              placeholder="الوصف..."
+              className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!newBanner.title) return toast.error("أدخل عنوان البانر");
+                setHeroBannersEdit([...heroBannersEdit, newBanner]);
+                setNewBanner({ image: "", title: "", desc: "" });
+                toast.success("تمت إضافة البانر");
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-4 py-2 text-xs font-bold text-secondary hover:bg-secondary/25"
+            >
+              <Plus className="h-3.5 w-3.5" /> إضافة بانر
+            </button>
+          </div>
+        </div>
+
+        {/* Section 1.6: About Page & Instagram */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
+          <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-secondary" />
+            4. صفحة "عن المحمصة" ومعلومات التواصل
+          </h4>
+
+          <label className="block">
+            <span className="text-xs font-bold text-muted-foreground block mb-1">حساب إنستغرام</span>
+            <div className="flex items-center gap-2 rounded-2xl border bg-background px-4 py-2.5">
+              <span className="text-sm font-bold text-muted-foreground">@</span>
+              <input
+                type="text"
+                value={instagramHandle.replace('@', '')}
+                onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
+                className="flex-1 text-xs outline-none bg-transparent font-mono font-bold"
+                placeholder="khasab"
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر في الفوتر — مثال: khasab</span>
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-bold text-muted-foreground block mb-1">نص صفحة "عن المحمصة"</span>
+            <textarea
+              value={aboutText}
+              onChange={(e) => setAboutText(e.target.value)}
+              className="w-full rounded-2xl border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-ring min-h-[120px]"
+              placeholder="اكتب قصة محمصتك هنا، سيظهر هذا النص في صفحة 'عن خصب'..."
+            />
+            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر في صفحة /about</span>
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-bold text-muted-foreground block mb-1">نص الفوتر (أسفل الموقع)</span>
+            <textarea
+              value={footerText}
+              onChange={(e) => setFooterText(e.target.value)}
+              className="w-full rounded-2xl border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-ring min-h-[80px]"
+              placeholder="اكتب وصفاً قصيراً لمتجرك..."
+            />
+            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر تحت اسم المتجر في جميع الصفحات</span>
+          </label>
+        </div>
+
+        {/* Section 1.7: Social Links */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
+          <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
+            <Globe className="h-4 w-4 text-secondary" />
+            روابط التواصل الاجتماعي
+          </h4>
+          <p className="text-xs text-muted-foreground">أضف روابط حساباتك في مختلف المنصات (ستظهر في الفوتر)</p>
+
+          <div className="space-y-3">
+            {socialLinks.map((link, idx) => (
+              <div key={idx} className="flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-3">
+                <select
+                  value={link.platform}
+                  onChange={(e) => {
+                    const updated = [...socialLinks];
+                    updated[idx] = { ...updated[idx]!, platform: e.target.value as any };
+                    setSocialLinks(updated);
+                  }}
+                  className="rounded-xl border bg-card px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
+                >
+                  <option value="instagram">انستغرام</option>
+                  <option value="whatsapp">واتساب</option>
+                  <option value="tiktok">تيك توك</option>
+                  <option value="youtube">يوتيوب</option>
+                  <option value="facebook">فيسبوك</option>
+                  <option value="snapchat">سناب شات</option>
+                  <option value="twitter">تويتر (X)</option>
+                  <option value="telegram">تيليجرام</option>
+                  <option value="other">أخرى</option>
+                </select>
+                <input
+                  type="url"
+                  value={link.url}
+                  onChange={(e) => {
+                    const updated = [...socialLinks];
+                    updated[idx] = { ...updated[idx]!, url: e.target.value };
+                    setSocialLinks(updated);
+                  }}
+                  placeholder="الرابط (URL)..."
+                  className="flex-1 min-w-[200px] rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                  dir="ltr"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSocialLinks(socialLinks.filter((_, i) => i !== idx))}
+                  className="p-2 rounded-xl text-destructive hover:bg-destructive/10 shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSocialLinks([...socialLinks, { platform: "instagram", url: "" }])}
+            className="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-4 py-2 text-xs font-bold text-secondary hover:bg-secondary/25"
+          >
+            <Plus className="h-3.5 w-3.5" /> إضافة رابط
+          </button>
+        </div>
+
         {/* Section 2: Contact & Pickup Info */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
           <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
             <Phone className="h-4 w-4 text-secondary" />
-            2. بيانات التواصل ونقطة الاستلام الرسمية
+            5. بيانات التواصل ونقطة الاستلام الرسمية
           </h4>
 
           <div className="grid gap-4 sm:grid-cols-2">

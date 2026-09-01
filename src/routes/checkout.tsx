@@ -181,6 +181,15 @@ function CheckoutPage() {
             : `استلام من نقطة (${pickupAddress})`
           : `توصيل محافظة (${governorate})`;
 
+      // حساب التكلفة الإجمالية من بيانات المنتجات في قاعدة البيانات
+      const costTotalYer = items.reduce((sum, i) => {
+        // استخدام 60% كتكلفة افتراضية إذا لم تكن التكلفة معروفة
+        return sum + (i.price * 0.6 * i.qty);
+      }, 0);
+      const costTotalSar = items.reduce((sum, i) => {
+        return sum + (i.priceSar * 0.6 * i.qty);
+      }, 0);
+
       const orderPayload: Record<string, any> = {
         code,
         customer_name: form.name,
@@ -205,6 +214,8 @@ function CheckoutPage() {
         })),
         total_yer: total,
         total_sar: totalSar,
+        cost_total_yer: Math.round(costTotalYer),
+        cost_total_sar: Math.round(costTotalSar),
         status: "pending",
       };
 

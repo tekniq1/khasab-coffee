@@ -38,14 +38,24 @@ function AuthPage() {
   const checkUserRoleAndNavigate = async (user: any) => {
     if (!user) return;
     try {
-      if (redirect && redirect !== "/admin") {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      const isAdmin = roleData?.role === "admin";
+
+      if (redirect) {
         navigate({ to: redirect as any });
+      } else if (isAdmin) {
+        navigate({ to: "/admin" });
       } else {
         navigate({ to: "/" });
       }
     } catch (err) {
       console.error("Auth redirect error:", err);
-      navigate({ to: "/" });
+      navigate({ to: (redirect || "/") as any });
     }
   };
 

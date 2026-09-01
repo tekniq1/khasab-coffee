@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, MessageCircle, Phone } from "lucide-react";
+import { Instagram, MessageCircle, Phone, Youtube, Twitter, Facebook, Globe } from "lucide-react";
 
 import { brandLogo, categories } from "@/lib/products";
 import { useLiveStoreSettings } from "@/lib/settings";
@@ -28,7 +28,7 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="mt-4 max-w-xs text-sm leading-7 opacity-75">
-            مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.
+            {settings.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك."}
           </p>
         </div>
 
@@ -63,9 +63,45 @@ export function SiteFooter() {
                 واتساب خدمة العملاء
               </a>
             </li>
-            <li className="flex items-center gap-2">
-              <Instagram className="h-4 w-4 shrink-0" /> @khasab
-            </li>
+            {settings.social_links && settings.social_links.length > 0 ? (
+              settings.social_links.map((link, idx) => {
+                let Icon = Globe;
+                if (link.platform === "instagram") Icon = Instagram;
+                else if (link.platform === "whatsapp") Icon = MessageCircle;
+                else if (link.platform === "youtube") Icon = Youtube;
+                else if (link.platform === "facebook") Icon = Facebook;
+                else if (link.platform === "twitter") Icon = Twitter;
+                
+                return (
+                  <li key={idx} className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <a href={link.url} target="_blank" rel="noreferrer" className="hover:text-secondary">
+                      {link.platform === "instagram" ? (link.label || `@${link.url.split('/').pop()?.split('?')[0]}`) : (link.label || link.platform)}
+                    </a>
+                  </li>
+                );
+              })
+            ) : (
+              <>
+                {settings.instagram_handle ? (
+                  <li className="flex items-center gap-2">
+                    <Instagram className="h-4 w-4 shrink-0" />
+                    <a
+                      href={`https://instagram.com/${settings.instagram_handle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-secondary"
+                    >
+                      @{settings.instagram_handle.replace('@', '')}
+                    </a>
+                  </li>
+                ) : (
+                  <li className="flex items-center gap-2">
+                    <Instagram className="h-4 w-4 shrink-0" /> @khasab
+                  </li>
+                )}
+              </>
+            )}
           </ul>
         </div>
       </div>

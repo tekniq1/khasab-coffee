@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/product-card";
 import { heroBanners, products, useLiveProducts } from "@/lib/products";
+import { useLiveStoreSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -28,14 +29,16 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [activeBanner, setActiveBanner] = useState(0);
   const { products: liveProducts } = useLiveProducts();
+  const { settings } = useLiveStoreSettings();
+  const liveBanners = (settings.hero_banners && settings.hero_banners.length > 0) ? settings.hero_banners : heroBanners;
 
   // Auto slide hero banners
   useEffect(() => {
     const timer = setInterval(() => {
-      setActiveBanner((prev) => (prev + 1) % heroBanners.length);
+      setActiveBanner((prev) => (prev + 1) % liveBanners.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [liveBanners.length]);
 
   const activeItems = (liveProducts || products || []).filter((p) => p && p.isActive !== false);
   const bestSellers = activeItems.filter((x) => x.bestSeller);
@@ -56,8 +59,8 @@ function Index() {
               className="absolute inset-0 z-0"
             >
               <img
-                src={heroBanners[activeBanner]!.image}
-                alt={heroBanners[activeBanner]!.title}
+                src={liveBanners[activeBanner]!.image}
+                alt={liveBanners[activeBanner]!.title}
                 className="h-full w-full object-cover opacity-25"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/80 to-transparent" />
@@ -76,10 +79,10 @@ function Index() {
                 قهوة مختصة • أدوات باريستا • تحميص طازج
               </span>
               <h1 className="mt-4 text-3xl leading-tight font-black sm:text-5xl lg:text-6xl text-white">
-                {heroBanners[activeBanner]!.title}
+                {liveBanners[activeBanner]!.title}
               </h1>
               <p className="mt-4 text-sm leading-7 text-primary-foreground/80 sm:text-base">
-                {heroBanners[activeBanner]!.desc}
+                {liveBanners[activeBanner]!.desc}
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -104,14 +107,14 @@ function Index() {
           {/* Slider controls */}
           <div className="absolute bottom-6 start-4 z-20 flex items-center gap-2 sm:start-8">
             <button
-              onClick={() => setActiveBanner((prev) => (prev - 1 + heroBanners.length) % heroBanners.length)}
+              onClick={() => setActiveBanner((prev) => (prev - 1 + liveBanners.length) % liveBanners.length)}
               className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
               title="السابق"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
             <button
-              onClick={() => setActiveBanner((prev) => (prev + 1) % heroBanners.length)}
+              onClick={() => setActiveBanner((prev) => (prev + 1) % liveBanners.length)}
               className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
               title="التالي"
             >
@@ -119,7 +122,7 @@ function Index() {
             </button>
 
             <div className="ms-3 flex items-center gap-1.5">
-              {heroBanners.map((_, idx) => (
+              {liveBanners.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveBanner(idx)}
