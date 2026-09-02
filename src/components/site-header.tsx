@@ -29,6 +29,10 @@ export function SiteHeader() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   const storeName = settings.store_name || "محمصة خصب";
@@ -69,15 +73,13 @@ export function SiteHeader() {
                     {l.label}
                   </Link>
                 ))}
-                {currentUser && (
-                  <Link
-                    to="/my-orders"
-                    onClick={() => setOpen(false)}
-                    className="rounded-xl px-3 py-2 font-medium text-foreground hover:bg-muted flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" /> طلباتي
-                  </Link>
-                )}
+                <Link
+                  to="/my-orders"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-3 py-2 font-medium text-foreground hover:bg-muted flex items-center gap-2"
+                >
+                  <Package className="h-4 w-4" /> طلباتي
+                </Link>
                 <div className="mt-4 mb-1 px-3 text-xs text-muted-foreground">التصنيفات</div>
                 {categories.map((c) => (
                   <Link
@@ -118,15 +120,14 @@ export function SiteHeader() {
                 {l.label}
               </Link>
             ))}
-            {currentUser && (
-              <Link
-                to="/my-orders"
-                activeProps={{ className: "bg-muted text-primary font-bold" }}
-                className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                طلباتي
-              </Link>
-            )}
+            <Link
+              to="/my-orders"
+              activeProps={{ className: "bg-primary/10 text-primary font-bold border-primary/20" }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-transparent px-4 py-2 text-sm font-bold text-primary transition-colors hover:border-primary/20 hover:bg-primary/10"
+            >
+              <Package className="h-4 w-4" />
+              تتبع طلباتي
+            </Link>
           </nav>
 
           <div className="ms-auto flex items-center gap-1.5 sm:gap-2 md:ms-0">

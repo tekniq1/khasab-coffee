@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Copy, CreditCard, MapPin, Store, Truck, UserCheck, Lock } from "lucide-react";
+import { Check, Copy, CreditCard, MapPin, Package, Store, Truck, UserCheck, Lock } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -272,8 +272,21 @@ function CheckoutPage() {
         <div className="mt-6 rounded-3xl border bg-card p-6 shadow-xs">
           <div className="text-xs text-muted-foreground">رقم الطلب الخاص بك</div>
           <div className="mt-1 font-mono text-3xl font-black tracking-widest text-primary">{orderId}</div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            احتفظ بهذا الرقم — يمكنك متابعة حالة طلبك في أي وقت عبر صفحة "تتبع طلباتي"
+          </p>
         </div>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+
+        {/* Primary action: track order */}
+        <Link
+          to="/my-orders"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-4 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary/90"
+        >
+          <Package className="h-5 w-5" />
+          تتبع حالة طلبي الآن
+        </Link>
+
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a
             href={`https://wa.me/${cleanWaNumber}?text=${msg}`}
             target="_blank"

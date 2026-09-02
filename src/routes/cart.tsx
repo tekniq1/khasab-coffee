@@ -79,7 +79,7 @@ function CartPage() {
                       −
                     </button>
                     <span className="w-6 text-center text-sm font-bold">{i.qty}</span>
-                    <button className="px-3 py-1" onClick={() => setQty(i.key, i.qty + 1)}>
+                    <button className="px-3 py-1" onClick={() => setQty(i.key, Math.min(i.maxStock ?? 999, i.qty + 1))}>
                       +
                     </button>
                   </div>

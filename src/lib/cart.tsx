@@ -11,6 +11,7 @@ export type CartItem = {
   priceSar: number;
   qty: number;
   options?: string | undefined;
+  maxStock?: number;
 };
 
 type CartCtx = {

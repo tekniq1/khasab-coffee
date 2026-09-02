@@ -30,7 +30,7 @@ export const categories: { id: CategoryId; name: string; desc: string; image: st
   { id: "green", name: "محاصيل البن الخضراء", desc: "قريباً — محاصيل البن الأخضر الخام", image: filters.url },
 ];
 
-export type Variant = { label: string; yer: number; sar: number };
+export type Variant = { label: string; yer: number; sar: number; stock?: number };
 
 export type Product = {
   id?: string;

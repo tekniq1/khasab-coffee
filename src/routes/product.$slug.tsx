@@ -61,7 +61,7 @@ function ProductPage() {
   }
 
   const allImages = product.images && product.images.length > 0 ? product.images : [product.image];
-  const currentImg = selectedImage || product.image || allImages[0];
+  const currentImg = selectedImage || product.image || allImages[0] || "";
   const related = (liveProducts || products).filter((p) => p.category === product.category && p.slug !== product.slug);
 
   const onAdd = () => {
@@ -73,6 +73,7 @@ function ProductPage() {
       priceSar: variant.sar,
       qty,
       options: product.isCoffee ? `${grind} • ${variant.label}` : variant.label,
+      maxStock: variant.stock !== undefined ? variant.stock : (product.stockQuantity ?? 50),
     });
     setModalOpen(true);
   };
@@ -138,17 +139,40 @@ function ProductPage() {
               <div>
                 <div className="mb-2 text-sm font-bold">{product.isCoffee ? "الوزن / الحجم" : "الخيار"}</div>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants.map((v) => (
-                    <button
-                      key={v.label}
-                      onClick={() => setVariant(v)}
-                      className={`rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
-                        variant.label === v.label ? "bg-primary text-primary-foreground shadow-sm" : "bg-card"
-                      }`}
-                    >
-                      {v.label} ({price(v)})
-                    </button>
-                  ))}
+                  {product.variants.map((v) => {
+                    const vStock = v.stock !== undefined ? v.stock : (product.stockQuantity ?? 50);
+                    const vOutOfStock = vStock <= 0;
+                    return (
+                      <button
+                        key={v.label}
+                        onClick={() => {
+                          if (vOutOfStock) return;
+                          setVariant(v);
+                          setQty(1);
+                        }}
+                        disabled={vOutOfStock}
+                        className={`relative rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
+                          vOutOfStock
+                            ? "cursor-not-allowed border-muted bg-muted text-muted-foreground opacity-60"
+                            : variant.label === v.label
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-card hover:border-primary"
+                        }`}
+                      >
+                        {v.label} ({price(v)})
+                        {vOutOfStock && (
+                          <span className="absolute -top-2 -end-1 rounded-full bg-destructive px-1.5 py-px text-[9px] font-black text-white shadow-sm">
+                            نفدت
+                          </span>
+                        )}
+                        {!vOutOfStock && vStock <= (product.lowStockThreshold ?? 5) && (
+                          <span className="absolute -top-2 -end-1 rounded-full bg-amber-500 px-1.5 py-px text-[9px] font-black text-white shadow-sm">
+                            {vStock} متبقية
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -195,42 +219,50 @@ function ProductPage() {
           )}
 
           <div className="mt-8 flex items-center gap-3">
-            <div className="flex items-center rounded-full border bg-card">
-              <button 
-                className="px-4 py-2 text-lg disabled:opacity-50" 
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                disabled={product.stockQuantity !== undefined && product.stockQuantity <= 0}
-              >
-                −
-              </button>
-              <span className="w-8 text-center text-sm font-bold">{qty}</span>
-              <button 
-                className="px-4 py-2 text-lg disabled:opacity-50" 
-                onClick={() => setQty((q) => q + 1)}
-                disabled={product.stockQuantity !== undefined && product.stockQuantity <= 0}
-              >
-                +
-              </button>
-            </div>
-            <motion.button
-              whileTap={product.stockQuantity !== undefined && product.stockQuantity <= 0 ? {} : { scale: 0.95 }}
-              onClick={onAdd}
-              disabled={product.stockQuantity !== undefined && product.stockQuantity <= 0}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold shadow-[var(--shadow-soft)] ${
-                product.stockQuantity !== undefined && product.stockQuantity <= 0
-                  ? "cursor-not-allowed bg-muted text-muted-foreground"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
-              }`}
-            >
-              {product.stockQuantity !== undefined && product.stockQuantity <= 0 ? (
-                "نفدت الكمية"
-              ) : (
+            {(() => {
+              const currentStock = variant.stock !== undefined ? variant.stock : (product.stockQuantity ?? 50);
+              const isOutOfStock = currentStock <= 0;
+              return (
                 <>
-                  <ShoppingBag className="h-4 w-4" />
-                  أضف إلى السلة
+                  <div className="flex items-center rounded-full border bg-card">
+                    <button 
+                      className="px-4 py-2 text-lg disabled:opacity-50" 
+                      onClick={() => setQty((q) => Math.max(1, q - 1))}
+                      disabled={isOutOfStock}
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center text-sm font-bold">{qty}</span>
+                    <button 
+                      className="px-4 py-2 text-lg disabled:opacity-50" 
+                      onClick={() => setQty((q) => Math.min(currentStock, q + 1))}
+                      disabled={isOutOfStock || qty >= currentStock}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <motion.button
+                    whileTap={isOutOfStock ? {} : { scale: 0.95 }}
+                    onClick={onAdd}
+                    disabled={isOutOfStock}
+                    className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold shadow-[var(--shadow-soft)] ${
+                      isOutOfStock
+                        ? "cursor-not-allowed bg-muted text-muted-foreground"
+                        : "bg-primary text-primary-foreground hover:bg-primary/90"
+                    }`}
+                  >
+                    {isOutOfStock ? (
+                      "نفدت الكمية"
+                    ) : (
+                      <>
+                        <ShoppingBag className="h-4 w-4" />
+                        أضف إلى السلة
+                      </>
+                    )}
+                  </motion.button>
                 </>
-              )}
-            </motion.button>
+              );
+            })()}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">

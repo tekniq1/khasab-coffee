@@ -23,6 +23,7 @@ import {
   Trash2,
   Truck,
   Upload,
+  Download,
   Globe,
   Users,
   X,
@@ -585,7 +586,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     bestSeller: false,
     image: "",
     images: [] as string[],
-    variants: [] as { label: string; yer: number; sar: number }[],
+    variants: [] as { label: string; yer: number; sar: number; stock: number }[],
   });
 
   const openAdd = () => {
@@ -610,7 +611,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       bestSeller: false,
       image: "",
       images: [],
-      variants: [{ label: "100g", yer: 9000, sar: 22 }],
+      variants: [{ label: "100g", yer: 9000, sar: 22, stock: 50 }],
     });
     setModalOpen(true);
   };
@@ -639,7 +640,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       bestSeller: p.bestSeller ?? false,
       image: p.image || imgs[0] || "",
       images: imgs,
-      variants: p.variants && p.variants.length > 0 ? p.variants : [{ label: "100g", yer: firstVariant.yer, sar: firstVariant.sar }],
+      variants: p.variants && p.variants.length > 0 
+        ? p.variants.map(v => ({ ...v, stock: v.stock ?? p.stockQuantity ?? 50 }))
+        : [{ label: "100g", yer: firstVariant.yer, sar: firstVariant.sar, stock: p.stockQuantity ?? 50 }],
     });
     setModalOpen(true);
   };
@@ -815,23 +818,28 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     }
   };
 
-  const updateQuickStock = async (p: Product, newQty: number) => {
+  const updateVariantStock = async (p: Product, variantLabel: string, newQty: number) => {
     try {
       const qty = Math.max(0, newQty);
+      const updatedVariants = p.variants.map((v) =>
+        v.label === variantLabel ? { ...v, stock: qty } : v
+      );
       const finalImage = p.image || defaultProducts[0]?.image || "";
+      // Also update global stockQuantity to sum of all variants
+      const totalStock = updatedVariants.reduce((sum, v) => sum + (v.stock ?? 0), 0);
       const payload = {
         slug: p.slug,
         name: p.name,
         category: p.category,
         short: p.short || "",
         description: p.description || "",
-        stock_quantity: qty,
+        stock_quantity: totalStock,
         low_stock_threshold: p.lowStockThreshold ?? 5,
         cost_price_yer: p.costPriceYer ?? 0,
         cost_price_sar: p.costPriceSar ?? 0,
         image: finalImage,
         images: p.images && p.images.length > 0 ? p.images : [finalImage],
-        variants: p.variants,
+        variants: updatedVariants,
         is_coffee: p.isCoffee ?? false,
         origin: p.origin || "",
         process: p.process || "",
@@ -839,16 +847,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         is_active: p.isActive ?? true,
         updated_at: new Date().toISOString(),
       };
-
-      const { error } = await supabase.from("products").upsert(payload, { onConflict: "slug" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from("products").upsert(payload, { onConflict: "slug" });
       if (error) throw error;
       refetch();
-      toast.success(`تم تحديث مخزون (${p.name}) إلى ${qty} في قاعدة البيانات`);
+      toast.success(`تم تحديث مخزون حجم (${variantLabel}) في "${p.name}" إلى ${qty}`);
     } catch (err: any) {
-      console.error("Update stock error:", err);
-      toast.error(err?.message || "تعذر تحديث المخزون");
+      console.error("Update variant stock error:", err);
+      toast.error(err?.message || "تعذر تحديث مخزون الحجم");
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -892,9 +901,12 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               ) : (
                 (products || []).filter(Boolean).map((p) => {
                 const base = (p.variants && Array.isArray(p.variants) && p.variants[0]) ? p.variants[0] : { yer: 0, sar: 0 };
-                const stock = p.stockQuantity ?? 50;
-                const isLow = stock <= (p.lowStockThreshold ?? 5);
                 const imgCount = p.images?.length || (p.image ? 1 : 0);
+                // Per-variant: check if any variant is low or out of stock
+                const hasVariantStock = p.variants.some((v) => v.stock !== undefined);
+                const anyLow = hasVariantStock
+                  ? p.variants.some((v) => (v.stock ?? 0) <= (p.lowStockThreshold ?? 5))
+                  : (p.stockQuantity ?? 50) <= (p.lowStockThreshold ?? 5);
 
                 return (
                   <tr key={p.slug} className="transition-colors hover:bg-muted/30">
@@ -929,31 +941,44 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                         </>
                       )}
                     </td>
+                    {/* Per-variant stock controls */}
                     <td className="p-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-block h-2 w-2 rounded-full ${isLow ? "bg-destructive animate-ping" : "bg-emerald-500"}`} />
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => updateQuickStock(p, stock - 1)}
-                            className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
-                            title="تقليل المخزون بمقدار 1"
-                          >
-                            −
-                          </button>
-                          <input
-                            type="number"
-                            value={stock}
-                            onChange={(e) => updateQuickStock(p, Number(e.target.value))}
-                            className="w-12 text-center rounded-md border bg-background text-xs py-0.5 font-bold text-emerald-700 outline-none"
-                          />
-                          <button
-                            onClick={() => updateQuickStock(p, stock + 1)}
-                            className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
-                            title="زيادة المخزون بمقدار 1"
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="space-y-1.5">
+                        {p.variants.map((v) => {
+                          const vStock = v.stock !== undefined ? v.stock : (p.stockQuantity ?? 50);
+                          const vLow = vStock <= (p.lowStockThreshold ?? 5);
+                          const vOut = vStock <= 0;
+                          return (
+                            <div key={v.label} className="flex items-center gap-1.5">
+                              <span className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-black ${
+                                vOut ? "bg-destructive/15 text-destructive" : vLow ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/10 text-emerald-700"
+                              }`}>
+                                {v.label}
+                              </span>
+                              <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${vOut ? "bg-destructive animate-ping" : vLow ? "bg-amber-500" : "bg-emerald-500"}`} />
+                              <button
+                                onClick={() => updateVariantStock(p, v.label, vStock - 1)}
+                                className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
+                                title="تقليل"
+                              >−</button>
+                              <input
+                                type="number"
+                                value={vStock}
+                                onChange={(e) => updateVariantStock(p, v.label, Number(e.target.value))}
+                                className={`w-12 text-center rounded-md border bg-background text-xs py-0.5 font-bold outline-none ${vOut ? "text-destructive" : vLow ? "text-amber-700" : "text-emerald-700"}`}
+                              />
+                              <button
+                                onClick={() => updateVariantStock(p, v.label, vStock + 1)}
+                                className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
+                                title="زيادة"
+                              >+</button>
+                            </div>
+                          );
+                        })}
+                        {/* Global low-stock indicator */}
+                        {anyLow && (
+                          <div className="text-[10px] font-bold text-destructive">⚠ مخزون منخفض</div>
+                        )}
                       </div>
                     </td>
                     <td className="p-3.5">
@@ -1135,7 +1160,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   </div>
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, variants: [...form.variants, { label: form.isCoffee ? "250g" : "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar }] })}
+                    onClick={() => setForm({ ...form, variants: [...form.variants, { label: form.isCoffee ? "250g" : "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar, stock: 50 }] })}
                     className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-3 py-1.5 text-[11px] font-bold text-secondary hover:bg-secondary/25"
                   >
                     <Plus className="h-3 w-3" /> إضافة حجم
@@ -1186,6 +1211,20 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                           }}
                           className="flex-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
                           placeholder="22"
+                        />
+                      </div>
+                      <div className="w-20 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0" title="المخزون">📦</span>
+                        <input
+                          type="number"
+                          value={v.stock === undefined ? "" : v.stock}
+                          onChange={(e) => {
+                            const updated = [...form.variants];
+                            updated[idx] = { ...updated[idx]!, stock: e.target.value ? Number(e.target.value) : ("" as any) };
+                            setForm({ ...form, variants: updated });
+                          }}
+                          className="w-full rounded-xl border bg-background px-2 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring text-emerald-700"
+                          placeholder="الكمية"
                         />
                       </div>
                       <button
@@ -1403,7 +1442,51 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
     window.open(data.signedUrl, "_blank", "noopener");
   };
 
+  const deleteOrder = async (id: string, code: string) => {
+    if (!confirm(`هل أنت متأكد من حذف الطلب "${code}" نهائياً؟ لا يمكن التراجع عن هذه العملية.`)) return;
+    try {
+      const { error } = await supabase.from("orders").delete().eq("id", id);
+      if (error) throw error;
+      toast.success(`تم حذف الطلب ${code} بنجاح`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || "تعذر حذف الطلب");
+    }
+  };
+
+  const exportOrdersCSV = () => {
+    const rows = [
+      ["رقم الطلب", "اسم العميل", "الهاتف", "المنطقة", "طريقة التوصيل", "رقم الحوالة", "الحالة", "الإجمالي YER", "الإجمالي SAR", "التاريخ", "المنتجات"],
+    ];
+    filtered.forEach((o) => {
+      const items = o.items.map((it) => `${it.name}×${it.qty}`).join(" | ");
+      rows.push([
+        o.code,
+        o.customer_name,
+        o.phone,
+        o.city_type === "aden" ? "عدن" : `محافظة ${o.governorate || ""}`,
+        o.delivery_method || "",
+        o.txn_ref || "",
+        orderStatuses.find((s) => s.id === o.status)?.label ?? o.status,
+        String(o.total_yer || o.total || 0),
+        String(o.total_sar || ""),
+        new Date(o.created_at).toLocaleDateString("ar"),
+        items,
+      ]);
+    });
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders-khasab-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`تم تصدير ${filtered.length} طلب كملف CSV`);
+  };
+
   const filtered = orders.filter((o) => filter === "all" || o.status === filter);
+
 
   return (
     <div className="space-y-6">
@@ -1413,29 +1496,42 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
           <p className="text-xs text-muted-foreground">استقبال وتتبع شحنات العملاء بالوقت الحقيقي</p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap gap-1.5 bg-muted/50 p-1 rounded-2xl border">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* CSV Export */}
           <button
-            onClick={() => setFilter("all")}
-            className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
-              filter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-            }`}
+            onClick={exportOrdersCSV}
+            className="inline-flex items-center gap-1.5 rounded-full border bg-background px-4 py-2 text-xs font-bold text-primary hover:bg-muted shadow-xs"
+            title="تصدير الطلبات الظاهرة كملف Excel/CSV"
           >
-            الكل ({orders.length})
+            <Download className="h-3.5 w-3.5" />
+            تصدير CSV
           </button>
-          {orderStatuses.map((s) => (
+
+          {/* Filter Pills */}
+          <div className="flex flex-wrap gap-1.5 bg-muted/50 p-1 rounded-2xl border">
             <button
-              key={s.id}
-              onClick={() => setFilter(s.id)}
+              onClick={() => setFilter("all")}
               className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
-                filter === s.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                filter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
               }`}
             >
-              {s.label} ({orders.filter((o) => o.status === s.id).length})
+              الكل ({orders.length})
             </button>
-          ))}
+            {orderStatuses.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setFilter(s.id)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
+                  filter === s.id ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {s.label} ({orders.filter((o) => o.status === s.id).length})
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
 
       {filtered.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border bg-card p-12 text-center shadow-xs">
@@ -1454,14 +1550,24 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
                   </div>
                 </div>
 
-                <span
-                  className={`rounded-full border px-3.5 py-1 text-xs font-extrabold ${
-                    orderStatuses.find((s) => s.id === o.status)?.cls ?? ""
-                  }`}
-                >
-                  {orderStatuses.find((s) => s.id === o.status)?.label ?? o.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full border px-3.5 py-1 text-xs font-extrabold ${
+                      orderStatuses.find((s) => s.id === o.status)?.cls ?? ""
+                    }`}
+                  >
+                    {orderStatuses.find((s) => s.id === o.status)?.label ?? o.status}
+                  </span>
+                  <button
+                    onClick={() => deleteOrder(o.id, o.code)}
+                    className="rounded-full p-1.5 text-destructive hover:bg-destructive/10 transition-colors"
+                    title="حذف الطلب نهائياً"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
+
 
               <div className="mt-4 grid gap-3 text-xs sm:grid-cols-3">
                 <Info label="اسم العميل" value={o.customer_name} />
@@ -1881,16 +1987,24 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
     setSaving(true);
     try {
       // Find existing store_settings row if any
-      const { data: existing } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabase as any)
         .from("store_settings")
         .select("id")
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const bannerData = {
+      // Build the complete payload — all fields as independent columns
+      // hero_banners stores the actual banner list, while all other settings go in top-level columns
+      const payload: Record<string, any> = {
+        // Store identity
         store_name: storeName,
         logo_url: logoUrl,
+        // Announcement bar
+        announcement_text: announcementText,
+        announcement_enabled: enabled,
+        // Contact & delivery
         whatsapp_number: whatsappNumber,
         pickup_address: pickupAddress,
         aden_delivery_fee: adenDeliveryFee,
@@ -1899,18 +2013,15 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
         pickup_delivery_fee_sar: pickupDeliveryFeeSar,
         other_delivery_fee: otherDeliveryFee,
         other_delivery_fee_sar: otherDeliveryFeeSar,
+        // Bank accounts
         bank_accounts: accounts,
+        // Social & content
         instagram_handle: instagramHandle,
         about_text: aboutText,
         footer_text: footerText,
-        hero_banners_list: heroBannersEdit,
         social_links: socialLinks,
-      };
-
-      const payload: Record<string, any> = {
-        announcement_text: announcementText,
-        announcement_enabled: enabled,
-        hero_banners: [bannerData],
+        // Hero banners (actual banner images list)
+        hero_banners: heroBannersEdit,
         updated_at: new Date().toISOString(),
       };
 
@@ -1918,10 +2029,12 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
       const targetId = existing?.id || settings?.id;
 
       if (targetId) {
-        const { error } = await supabase.from("store_settings").update(payload).eq("id", targetId);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).from("store_settings").update(payload).eq("id", targetId);
         saveErr = error;
       } else {
-        const { error } = await supabase.from("store_settings").insert([payload]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).from("store_settings").insert([payload]);
         saveErr = error;
       }
 

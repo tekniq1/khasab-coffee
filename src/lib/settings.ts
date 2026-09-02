@@ -81,52 +81,54 @@ export function parseStoreSettings(row: any): StoreSettings {
     };
   }
 
-  // Check if extra settings are stored inside hero_banners JSON or direct columns
-  let extra: any = {};
-  if (row.hero_banners) {
-    if (Array.isArray(row.hero_banners) && row.hero_banners[0] && typeof row.hero_banners[0] === "object") {
-      extra = row.hero_banners[0];
-    } else if (typeof row.hero_banners === "object" && !Array.isArray(row.hero_banners)) {
-      extra = row.hero_banners;
-    }
+  // Backwards-compat: some old rows stored extra settings inside hero_banners[0]
+  let legacyExtra: any = {};
+  if (
+    row.hero_banners &&
+    Array.isArray(row.hero_banners) &&
+    row.hero_banners[0] &&
+    typeof row.hero_banners[0] === "object" &&
+    !row.hero_banners[0].image // not a real banner object
+  ) {
+    legacyExtra = row.hero_banners[0];
   }
 
-  let bankAccounts = row.bank_accounts || extra.bank_accounts;
+  let bankAccounts = row.bank_accounts || legacyExtra.bank_accounts;
   if (typeof bankAccounts === "string") {
-    try {
-      bankAccounts = JSON.parse(bankAccounts);
-    } catch {
-      bankAccounts = defaultBankAccounts;
-    }
+    try { bankAccounts = JSON.parse(bankAccounts); } catch { bankAccounts = defaultBankAccounts; }
   }
   if (!Array.isArray(bankAccounts) || bankAccounts.length === 0) {
     bankAccounts = defaultBankAccounts;
   }
 
+  // hero_banners: only real banner objects (those that have an .image field)
+  const heroBanners: HeroBanner[] = Array.isArray(row.hero_banners)
+    ? (row.hero_banners as any[]).filter((b) => b && typeof b === "object" && b.image)
+    : [];
+
   return {
     id: row.id,
-    store_name: row.store_name || extra.store_name || defaultStoreName,
-    logo_url: row.logo_url || extra.logo_url || "",
+    store_name: row.store_name || legacyExtra.store_name || defaultStoreName,
+    logo_url: row.logo_url || legacyExtra.logo_url || "",
     announcement_text: row.announcement_text ?? "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: row.announcement_enabled ?? true,
-    whatsapp_number: row.whatsapp_number || extra.whatsapp_number || defaultWhatsAppNumber,
-    pickup_address: row.pickup_address || extra.pickup_address || defaultPickupAddress,
-    aden_delivery_fee: row.aden_delivery_fee || extra.aden_delivery_fee || defaultAdenDeliveryFee,
-    aden_delivery_fee_sar: row.aden_delivery_fee_sar || extra.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
-    pickup_delivery_fee: row.pickup_delivery_fee || extra.pickup_delivery_fee || defaultPickupFee,
-    pickup_delivery_fee_sar: row.pickup_delivery_fee_sar || extra.pickup_delivery_fee_sar || defaultPickupFeeSar,
-    other_delivery_fee: row.other_delivery_fee || extra.other_delivery_fee || defaultOtherDeliveryFee,
-    other_delivery_fee_sar: row.other_delivery_fee_sar || extra.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
+    whatsapp_number: row.whatsapp_number || legacyExtra.whatsapp_number || defaultWhatsAppNumber,
+    pickup_address: row.pickup_address || legacyExtra.pickup_address || defaultPickupAddress,
+    aden_delivery_fee: row.aden_delivery_fee || legacyExtra.aden_delivery_fee || defaultAdenDeliveryFee,
+    aden_delivery_fee_sar: row.aden_delivery_fee_sar || legacyExtra.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
+    pickup_delivery_fee: row.pickup_delivery_fee || legacyExtra.pickup_delivery_fee || defaultPickupFee,
+    pickup_delivery_fee_sar: row.pickup_delivery_fee_sar || legacyExtra.pickup_delivery_fee_sar || defaultPickupFeeSar,
+    other_delivery_fee: row.other_delivery_fee || legacyExtra.other_delivery_fee || defaultOtherDeliveryFee,
+    other_delivery_fee_sar: row.other_delivery_fee_sar || legacyExtra.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
     bank_accounts: bankAccounts,
-    hero_banners: Array.isArray(row.hero_banners) && row.hero_banners.length > 0 && typeof row.hero_banners[0] === 'object' && row.hero_banners[0]?.image 
-      ? row.hero_banners as HeroBanner[]
-      : [],
-    instagram_handle: row.hero_banners?.[0]?.instagram_handle || extra.instagram_handle || 'khasab',
-    about_text: row.hero_banners?.[0]?.about_text || extra.about_text || '',
-    footer_text: row.hero_banners?.[0]?.footer_text || extra.footer_text || 'مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.',
-    about_cards: row.hero_banners?.[0]?.about_cards || extra.about_cards || [],
-    categories: row.hero_banners?.[0]?.categories || extra.categories || [],
-    social_links: row.hero_banners?.[0]?.social_links || extra.social_links || [],
+    hero_banners: heroBanners,
+    // Read from direct columns first, fall back to legacy extra
+    instagram_handle: row.instagram_handle || legacyExtra.instagram_handle || "khasab",
+    about_text: row.about_text || legacyExtra.about_text || "",
+    footer_text: row.footer_text || legacyExtra.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
+    about_cards: row.about_cards || legacyExtra.about_cards || [],
+    categories: row.categories || legacyExtra.categories || [],
+    social_links: row.social_links || legacyExtra.social_links || [],
   };
 }
 
@@ -157,7 +159,8 @@ export function useLiveStoreSettings() {
 
   const load = async () => {
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from("store_settings")
         .select("*")
         .order("updated_at", { ascending: false })
