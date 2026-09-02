@@ -743,7 +743,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         category: form.category,
         short: form.short,
         description: form.description,
-        stock_quantity: form.stockQuantity,
+        stock_quantity: finalVariants.reduce((sum, v) => sum + (v.stock || 0), 0),
         low_stock_threshold: form.lowStockThreshold,
         cost_price_yer: form.costPriceYer,
         cost_price_sar: form.costPriceSar,
@@ -1213,8 +1213,8 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                           placeholder="22"
                         />
                       </div>
-                      <div className="w-20 flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground font-bold shrink-0" title="المخزون">📦</span>
+                      <div className="w-24 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0" title="المخزون">📦 الكمية</span>
                         <input
                           type="number"
                           value={v.stock === undefined ? "" : v.stock}
@@ -1225,6 +1225,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                           }}
                           className="w-full rounded-xl border bg-background px-2 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring text-emerald-700"
                           placeholder="الكمية"
+                          required
                         />
                       </div>
                       <button
@@ -1263,8 +1264,8 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 </div>
               </div>
 
-              {/* Section 4: Cost & Stock */}
-              <div className="grid gap-3 sm:grid-cols-3">
+              {/* Section 4: Cost */}
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-xs font-bold text-muted-foreground">سعر التكلفة (YER)</span>
                   <input
@@ -1283,16 +1284,6 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                     onChange={(e) => setForm({ ...form, costPriceSar: e.target.value ? Number(e.target.value) : ("" as any) })}
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: 12"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-bold text-muted-foreground">الكمية بالمخزون (Stock) *</span>
-                  <input
-                    type="number"
-                    required
-                    value={form.stockQuantity || ""}
-                    onChange={(e) => setForm({ ...form, stockQuantity: e.target.value ? Number(e.target.value) : ("" as any) })}
-                    className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold text-emerald-700"
                   />
                 </label>
               </div>
