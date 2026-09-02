@@ -44,7 +44,13 @@ import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
 import { useCurrency } from "@/lib/currency";
-import { formatPrice, products as defaultProducts, brandLogo, fetchProductsFromSupabase, type Product } from "@/lib/products";
+import {
+  formatPrice,
+  products as defaultProducts,
+  brandLogo,
+  fetchProductsFromSupabase,
+  type Product,
+} from "@/lib/products";
 import {
   parseStoreSettings,
   defaultBankAccounts,
@@ -63,7 +69,10 @@ export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
       { title: "لوحة التحكم والإدارة — محمصة خصب" },
-      { name: "description", content: "إدارة متكاملة للمنتجات، المبيعات، الأرباح، والطلبات بالوقت الحقيقي لمحمصة خصب." },
+      {
+        name: "description",
+        content: "إدارة متكاملة للمنتجات، المبيعات، الأرباح، والطلبات بالوقت الحقيقي لمحمصة خصب.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -109,18 +118,32 @@ type Order = {
 };
 
 const orderStatuses: { id: Order["status"]; label: string; cls: string }[] = [
-  { id: "pending", label: "بانتظار التحقق", cls: "bg-amber-500/15 text-amber-700 border-amber-300" },
+  {
+    id: "pending",
+    label: "بانتظار التحقق",
+    cls: "bg-amber-500/15 text-amber-700 border-amber-300",
+  },
   { id: "confirmed", label: "مؤكد", cls: "bg-emerald-500/15 text-emerald-700 border-emerald-300" },
-  { id: "processing", label: "قيد التحضير", cls: "bg-purple-500/15 text-purple-700 border-purple-300" },
+  {
+    id: "processing",
+    label: "قيد التحضير",
+    cls: "bg-purple-500/15 text-purple-700 border-purple-300",
+  },
   { id: "shipped", label: "جاري التوصيل", cls: "bg-blue-500/15 text-blue-700 border-blue-300" },
   { id: "delivered", label: "تم التسليم", cls: "bg-primary/15 text-primary border-primary/30" },
-  { id: "cancelled", label: "ملغي", cls: "bg-destructive/15 text-destructive border-destructive/30" },
+  {
+    id: "cancelled",
+    label: "ملغي",
+    cls: "bg-destructive/15 text-destructive border-destructive/30",
+  },
 ];
 
 function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"analytics" | "products" | "orders" | "customers" | "store" | "security">("analytics");
+  const [activeTab, setActiveTab] = useState<
+    "analytics" | "products" | "orders" | "customers" | "store" | "security"
+  >("analytics");
   const [realtimeActive, setRealtimeActive] = useState(false);
 
   // 1. RBAC Auth Query (With auto-healing for owner account)
@@ -213,32 +236,20 @@ function AdminPage() {
     const chId = `admin-realtime-${Date.now()}`;
     const channel = supabase
       .channel(chId)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        (payload) => {
-          setRealtimeActive(true);
-          toast.info(`تحديث في الطلبات (${payload.eventType})`);
-          qc.invalidateQueries({ queryKey: ["admin-orders"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "products" },
-        (payload) => {
-          setRealtimeActive(true);
-          toast.info(`تحديث لحظي في المنتجات والمخزون (${payload.eventType})`);
-          qc.invalidateQueries({ queryKey: ["admin-products"] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "store_settings" },
-        () => {
-          setRealtimeActive(true);
-          qc.invalidateQueries({ queryKey: ["admin-store-settings"] });
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, (payload) => {
+        setRealtimeActive(true);
+        toast.info(`تحديث في الطلبات (${payload.eventType})`);
+        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, (payload) => {
+        setRealtimeActive(true);
+        toast.info(`تحديث لحظي في المنتجات والمخزون (${payload.eventType})`);
+        qc.invalidateQueries({ queryKey: ["admin-products"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "store_settings" }, () => {
+        setRealtimeActive(true);
+        qc.invalidateQueries({ queryKey: ["admin-store-settings"] });
+      })
       .subscribe();
 
     return () => {
@@ -297,7 +308,9 @@ function AdminPage() {
             خصب
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-primary sm:text-2xl">لوحة التحكم والمخرجات (Admin Panel)</h1>
+            <h1 className="text-xl font-extrabold text-primary sm:text-2xl">
+              لوحة التحكم والمخرجات (Admin Panel)
+            </h1>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -377,16 +390,19 @@ function AdminPage() {
             >
               <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
-              {tab.id === "orders" && allOrders.filter((o) => o.status === "pending").length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] text-white">
-                  {allOrders.filter((o) => o.status === "pending").length}
-                </span>
-              )}
-              {tab.id === "products" && allProducts.filter((p) => (p.stockQuantity ?? 50) <= (p.lowStockThreshold ?? 5)).length > 0 && (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] text-white">
-                  !
-                </span>
-              )}
+              {tab.id === "orders" &&
+                allOrders.filter((o) => o.status === "pending").length > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-amber-500 px-1 text-[10px] text-white">
+                    {allOrders.filter((o) => o.status === "pending").length}
+                  </span>
+                )}
+              {tab.id === "products" &&
+                allProducts.filter((p) => (p.stockQuantity ?? 50) <= (p.lowStockThreshold ?? 5))
+                  .length > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-destructive px-1 text-[10px] text-white">
+                    !
+                  </span>
+                )}
             </button>
           );
         })}
@@ -394,11 +410,24 @@ function AdminPage() {
 
       {/* Tab Content Areas */}
       <div className="mt-6">
-        {activeTab === "analytics" && <AnalyticsModule orders={allOrders} products={allProducts} customers={allCustomers} />}
-        {activeTab === "products" && <ProductsModule products={allProducts} refetch={() => productsQuery.refetch()} />}
-        {activeTab === "orders" && <OrdersModule orders={allOrders} refetch={() => ordersQuery.refetch()} />}
-        {activeTab === "customers" && <CustomersModule customers={allCustomers} orders={allOrders} />}
-        {activeTab === "store" && <StoreSettingsModule settings={settingsQuery.data} refetch={() => settingsQuery.refetch()} />}
+        {activeTab === "analytics" && (
+          <AnalyticsModule orders={allOrders} products={allProducts} customers={allCustomers} />
+        )}
+        {activeTab === "products" && (
+          <ProductsModule products={allProducts} refetch={() => productsQuery.refetch()} />
+        )}
+        {activeTab === "orders" && (
+          <OrdersModule orders={allOrders} refetch={() => ordersQuery.refetch()} />
+        )}
+        {activeTab === "customers" && (
+          <CustomersModule customers={allCustomers} orders={allOrders} />
+        )}
+        {activeTab === "store" && (
+          <StoreSettingsModule
+            settings={settingsQuery.data}
+            refetch={() => settingsQuery.refetch()}
+          />
+        )}
         {activeTab === "security" && <SecurityModule customers={allCustomers} />}
       </div>
     </div>
@@ -408,13 +437,24 @@ function AdminPage() {
 /* ====================================================================
    MODULE 1: Analytics & Net Profit Dashboard (التقارير والأرباح)
    ==================================================================== */
-function AnalyticsModule({ orders, products, customers }: { orders: Order[]; products: Product[]; customers: any[] }) {
+function AnalyticsModule({
+  orders,
+  products,
+  customers,
+}: {
+  orders: Order[];
+  products: Product[];
+  customers: any[];
+}) {
   const { currency } = useCurrency();
   const completedOrders = orders.filter((o) => o.status !== "cancelled");
 
   // Revenues and Net Profits — only confirmed/delivered orders
   const totalSalesYer = completedOrders.reduce((sum, o) => sum + (o.total_yer ?? o.total ?? 0), 0);
-  const totalSalesSar = completedOrders.reduce((sum, o) => sum + (o.total_sar ?? (o.total_yer ? Math.round(o.total_yer / 400) : 0)), 0);
+  const totalSalesSar = completedOrders.reduce(
+    (sum, o) => sum + (o.total_sar ?? (o.total_yer ? Math.round(o.total_yer / 400) : 0)),
+    0,
+  );
 
   // Profit = Sales - Cost (use actual cost if saved, else fallback 60% estimate)
   const totalCostYer = completedOrders.reduce((sum, o) => {
@@ -440,8 +480,16 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
   const salesChartData = [
     { name: "الأحد", sales: Math.round(baseSales * 0.12), profit: Math.round(baseProfit * 0.12) },
     { name: "الإثنين", sales: Math.round(baseSales * 0.15), profit: Math.round(baseProfit * 0.15) },
-    { name: "الثلاثاء", sales: Math.round(baseSales * 0.18), profit: Math.round(baseProfit * 0.18) },
-    { name: "الأربعاء", sales: Math.round(baseSales * 0.22), profit: Math.round(baseProfit * 0.22) },
+    {
+      name: "الثلاثاء",
+      sales: Math.round(baseSales * 0.18),
+      profit: Math.round(baseProfit * 0.18),
+    },
+    {
+      name: "الأربعاء",
+      sales: Math.round(baseSales * 0.22),
+      profit: Math.round(baseProfit * 0.22),
+    },
     { name: "الخميس", sales: Math.round(baseSales * 0.25), profit: Math.round(baseProfit * 0.25) },
     { name: "الجمعة", sales: Math.round(baseSales * 0.08), profit: Math.round(baseProfit * 0.08) },
   ];
@@ -494,9 +542,13 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
         <div className="rounded-3xl border bg-card p-5 lg:col-span-2 shadow-xs">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-base text-primary">مسار المبيعات والأرباح (الأسبوع الحاضر)</h3>
+              <h3 className="font-bold text-base text-primary">
+                مسار المبيعات والأرباح (الأسبوع الحاضر)
+              </h3>
               <p className="text-xs text-muted-foreground">
-                {isYer ? "عرض الرسوم البيانية بالريال اليمني (YER)" : "عرض الرسوم البيانية بالريال السعودي (SAR)"}
+                {isYer
+                  ? "عرض الرسوم البيانية بالريال اليمني (YER)"
+                  : "عرض الرسوم البيانية بالريال السعودي (SAR)"}
               </p>
             </div>
             <span className="rounded-full bg-secondary/15 px-3 py-1 text-xs font-bold text-secondary">
@@ -509,9 +561,28 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
               <AreaChart data={salesChartData}>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} />
                 <YAxis stroke="#888888" fontSize={12} />
-                <Tooltip formatter={(value: any) => [isYer ? formatPrice(Number(value)) : `${Number(value).toLocaleString()} ر.س`, ""]} />
-                <Area type="monotone" dataKey="sales" name="المبيعات" stroke="#0E3B43" fill="#0E3B43" fillOpacity={0.15} />
-                <Area type="monotone" dataKey="profit" name="صافي الربح" stroke="#BA7A3B" fill="#BA7A3B" fillOpacity={0.2} />
+                <Tooltip
+                  formatter={(value: any) => [
+                    isYer ? formatPrice(Number(value)) : `${Number(value).toLocaleString()} ر.س`,
+                    "",
+                  ]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="sales"
+                  name="المبيعات"
+                  stroke="#0E3B43"
+                  fill="#0E3B43"
+                  fillOpacity={0.15}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="profit"
+                  name="صافي الربح"
+                  stroke="#BA7A3B"
+                  fill="#BA7A3B"
+                  fillOpacity={0.2}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -525,7 +596,15 @@ function AnalyticsModule({ orders, products, customers }: { orders: Order[]; pro
           <div className="h-52 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={regionData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+                <Pie
+                  data={regionData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={70}
+                  label
+                >
                   {regionData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
@@ -618,7 +697,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
 
   const openEdit = (p: Product) => {
     setEditingProduct(p);
-    const imgs = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+    const imgs = p.images && p.images.length > 0 ? p.images : p.image ? [p.image] : [];
     const firstVariant = p.variants?.[0] || { yer: 9000, sar: 22 };
     setForm({
       name: p.name,
@@ -640,9 +719,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       bestSeller: p.bestSeller ?? false,
       image: p.image || imgs[0] || "",
       images: imgs,
-      variants: p.variants && p.variants.length > 0 
-        ? p.variants.map(v => ({ ...v, stock: v.stock ?? p.stockQuantity ?? 50 }))
-        : [{ label: "100g", yer: firstVariant.yer, sar: firstVariant.sar, stock: p.stockQuantity ?? 50 }],
+      variants:
+        p.variants && p.variants.length > 0
+          ? p.variants.map((v) => ({ ...v, stock: v.stock ?? p.stockQuantity ?? 50 }))
+          : [
+              {
+                label: "100g",
+                yer: firstVariant.yer,
+                sar: firstVariant.sar,
+                stock: p.stockQuantity ?? 50,
+              },
+            ],
     });
     setModalOpen(true);
   };
@@ -663,7 +750,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
           .upload(fileName, file, { contentType: file.type, upsert: true });
 
         if (!error && data) {
-          const { data: publicData } = supabase.storage.from("product-images").getPublicUrl(fileName);
+          const { data: publicData } = supabase.storage
+            .from("product-images")
+            .getPublicUrl(fileName);
           if (publicData?.publicUrl) {
             uploadedUrls.push(publicData.publicUrl);
           }
@@ -718,7 +807,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       return {
         ...prev,
         images: updated,
-        image: prev.image === imgUrl ? (updated[0] || "") : prev.image,
+        image: prev.image === imgUrl ? updated[0] || "" : prev.image,
       };
     });
   };
@@ -728,14 +817,19 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     try {
       const finalImage = form.image || form.images[0] || "";
       // Use dynamic variants if provided, otherwise generate from base price
-      const finalVariants = form.variants.length > 0
-        ? form.variants
-        : form.isCoffee
-          ? [
-              { label: "100g", yer: form.sellingPriceYer, sar: form.sellingPriceSar },
-              { label: "200g", yer: Math.round(form.sellingPriceYer * 1.75), sar: Math.round(form.sellingPriceSar * 1.75) },
-            ]
-          : [{ label: "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar }];
+      const finalVariants =
+        form.variants.length > 0
+          ? form.variants
+          : form.isCoffee
+            ? [
+                { label: "100g", yer: form.sellingPriceYer, sar: form.sellingPriceSar },
+                {
+                  label: "200g",
+                  yer: Math.round(form.sellingPriceYer * 1.75),
+                  sar: Math.round(form.sellingPriceSar * 1.75),
+                },
+              ]
+            : [{ label: "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar }];
 
       const payload = {
         slug: form.slug,
@@ -748,7 +842,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         cost_price_yer: form.costPriceYer,
         cost_price_sar: form.costPriceSar,
         image: finalImage,
-        images: form.images.length > 0 ? form.images : (finalImage ? [finalImage] : []),
+        images: form.images.length > 0 ? form.images : finalImage ? [finalImage] : [],
         variants: finalVariants,
         is_coffee: form.isCoffee,
         origin: form.origin,
@@ -762,12 +856,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       const { error } = await supabase.from("products").upsert(payload, { onConflict: "slug" });
       if (error) throw error;
 
-      toast.success(editingProduct ? "تم تحديث بيانات وصور المنتج بنجاح" : "تمت إضافة المنتج الجديد بنجاح");
+      toast.success(
+        editingProduct ? "تم تحديث بيانات وصور المنتج بنجاح" : "تمت إضافة المنتج الجديد بنجاح",
+      );
       setModalOpen(false);
       refetch();
     } catch (err: any) {
       console.error("Save product error:", err);
-      toast.error(err?.message || "حدث خطأ أثناء حفظ بيانات المنتج (تأكد من وجود صلاحية admin في جدول user_roles)");
+      toast.error(
+        err?.message ||
+          "حدث خطأ أثناء حفظ بيانات المنتج (تأكد من وجود صلاحية admin في جدول user_roles)",
+      );
     }
   };
 
@@ -822,7 +921,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     try {
       const qty = Math.max(0, newQty);
       const updatedVariants = p.variants.map((v) =>
-        v.label === variantLabel ? { ...v, stock: qty } : v
+        v.label === variantLabel ? { ...v, stock: qty } : v,
       );
       const finalImage = p.image || defaultProducts[0]?.image || "";
       // Also update global stockQuantity to sum of all variants
@@ -848,7 +947,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         updated_at: new Date().toISOString(),
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase as any).from("products").upsert(payload, { onConflict: "slug" });
+      const { error } = await (supabase as any)
+        .from("products")
+        .upsert(payload, { onConflict: "slug" });
       if (error) throw error;
       refetch();
       toast.success(`تم تحديث مخزون حجم (${variantLabel}) في "${p.name}" إلى ${qty}`);
@@ -858,13 +959,14 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     }
   };
 
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-extrabold text-primary">إدارة المنتجات، الصور والمخزون</h3>
-          <p className="text-xs text-muted-foreground">إضافة وتعديل المنتجات ورفع الصور المتعددة وتحديد المنتجات الأكثر مبيعاً</p>
+          <p className="text-xs text-muted-foreground">
+            إضافة وتعديل المنتجات ورفع الصور المتعددة وتحديد المنتجات الأكثر مبيعاً
+          </p>
         </div>
         <button
           onClick={openAdd}
@@ -894,128 +996,174 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-muted-foreground">
                     <Package className="mx-auto h-8 w-8 text-secondary mb-2 opacity-60" />
-                    <p className="font-bold text-sm text-primary">لا توجد منتجات مسجلة في قاعدة البيانات حالياً</p>
-                    <p className="text-xs text-muted-foreground mt-1">اضغط على زر "إضافة منتج جديد" بالأعلى لإضافة المحصول أو الأداة وسيظهر فوراً بالمتجر.</p>
+                    <p className="font-bold text-sm text-primary">
+                      لا توجد منتجات مسجلة في قاعدة البيانات حالياً
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      اضغط على زر "إضافة منتج جديد" بالأعلى لإضافة المحصول أو الأداة وسيظهر فوراً
+                      بالمتجر.
+                    </p>
                   </td>
                 </tr>
               ) : (
                 (products || []).filter(Boolean).map((p) => {
-                const base = (p.variants && Array.isArray(p.variants) && p.variants[0]) ? p.variants[0] : { yer: 0, sar: 0 };
-                const imgCount = p.images?.length || (p.image ? 1 : 0);
-                // Per-variant: check if any variant is low or out of stock
-                const hasVariantStock = p.variants.some((v) => v.stock !== undefined);
-                const anyLow = hasVariantStock
-                  ? p.variants.some((v) => (v.stock ?? 0) <= (p.lowStockThreshold ?? 5))
-                  : (p.stockQuantity ?? 50) <= (p.lowStockThreshold ?? 5);
+                  const base =
+                    p.variants && Array.isArray(p.variants) && p.variants[0]
+                      ? p.variants[0]
+                      : { yer: 0, sar: 0 };
+                  const imgCount = p.images?.length || (p.image ? 1 : 0);
+                  // Per-variant: check if any variant is low or out of stock
+                  const hasVariantStock = p.variants.some((v) => v.stock !== undefined);
+                  const anyLow = hasVariantStock
+                    ? p.variants.some((v) => (v.stock ?? 0) <= (p.lowStockThreshold ?? 5))
+                    : (p.stockQuantity ?? 50) <= (p.lowStockThreshold ?? 5);
 
-                return (
-                  <tr key={p.slug} className="transition-colors hover:bg-muted/30">
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={p.image || defaultProducts[0]?.image}
-                          alt={p.name}
-                          className="h-11 w-11 rounded-xl object-cover ring-1 ring-border shrink-0 bg-background"
-                        />
-                        <div>
-                          <div className="font-extrabold text-primary">{p.name}</div>
-                          <div className="text-[11px] text-muted-foreground">{p.short || p.slug}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3.5">
-                      <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground">
-                        {p.category === "coffee" ? "محاصيل بن" : p.category === "tools" ? "أدوات تحضير" : p.category === "matcha" ? "ماتشا" : "بن أخضر"}
-                      </span>
-                    </td>
-                    <td className="p-3.5 font-bold">
-                      {currency === "YER" ? (
-                        <>
-                          <div className="text-primary font-black">{base.yer.toLocaleString()} ر.ي</div>
-                          <div className="text-[11px] text-muted-foreground">{base.sar} ر.س</div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-primary font-black">{base.sar.toLocaleString()} ر.س</div>
-                          <div className="text-[11px] text-muted-foreground">{base.yer.toLocaleString()} ر.ي</div>
-                        </>
-                      )}
-                    </td>
-                    {/* Per-variant stock controls */}
-                    <td className="p-3.5">
-                      <div className="space-y-1.5">
-                        {p.variants.map((v) => {
-                          const vStock = v.stock !== undefined ? v.stock : (p.stockQuantity ?? 50);
-                          const vLow = vStock <= (p.lowStockThreshold ?? 5);
-                          const vOut = vStock <= 0;
-                          return (
-                            <div key={v.label} className="flex items-center gap-1.5">
-                              <span className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-black ${
-                                vOut ? "bg-destructive/15 text-destructive" : vLow ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/10 text-emerald-700"
-                              }`}>
-                                {v.label}
-                              </span>
-                              <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${vOut ? "bg-destructive animate-ping" : vLow ? "bg-amber-500" : "bg-emerald-500"}`} />
-                              <button
-                                onClick={() => updateVariantStock(p, v.label, vStock - 1)}
-                                className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
-                                title="تقليل"
-                              >−</button>
-                              <input
-                                type="number"
-                                value={vStock}
-                                onChange={(e) => updateVariantStock(p, v.label, Number(e.target.value))}
-                                className={`w-12 text-center rounded-md border bg-background text-xs py-0.5 font-bold outline-none ${vOut ? "text-destructive" : vLow ? "text-amber-700" : "text-emerald-700"}`}
-                              />
-                              <button
-                                onClick={() => updateVariantStock(p, v.label, vStock + 1)}
-                                className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
-                                title="زيادة"
-                              >+</button>
+                  return (
+                    <tr key={p.slug} className="transition-colors hover:bg-muted/30">
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={p.image || defaultProducts[0]?.image}
+                            alt={p.name}
+                            className="h-11 w-11 rounded-xl object-cover ring-1 ring-border shrink-0 bg-background"
+                          />
+                          <div>
+                            <div className="font-extrabold text-primary">{p.name}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {p.short || p.slug}
                             </div>
-                          );
-                        })}
-                        {/* Global low-stock indicator */}
-                        {anyLow && (
-                          <div className="text-[10px] font-bold text-destructive">⚠ مخزون منخفض</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3.5">
+                        <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground">
+                          {p.category === "coffee"
+                            ? "محاصيل بن"
+                            : p.category === "tools"
+                              ? "أدوات تحضير"
+                              : p.category === "matcha"
+                                ? "ماتشا"
+                                : "بن أخضر"}
+                        </span>
+                      </td>
+                      <td className="p-3.5 font-bold">
+                        {currency === "YER" ? (
+                          <>
+                            <div className="text-primary font-black">
+                              {base.yer.toLocaleString()} ر.ي
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">{base.sar} ر.س</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-primary font-black">
+                              {base.sar.toLocaleString()} ر.س
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {base.yer.toLocaleString()} ر.ي
+                            </div>
+                          </>
                         )}
-                      </div>
-                    </td>
-                    <td className="p-3.5">
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-semibold">
-                        <ImageIcon className="h-3.5 w-3.5" /> {imgCount} صور
-                      </span>
-                    </td>
-                    <td className="p-3.5">
-                      <button
-                        onClick={() => toggleActive(p)}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                          p.isActive ?? true ? "bg-emerald-500/15 text-emerald-700" : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {p.isActive ?? true ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                        {p.isActive ?? true ? "نشط" : "معطل"}
-                      </button>
-                    </td>
-                    <td className="p-3.5 flex items-center gap-1">
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="rounded-full p-2 text-primary hover:bg-muted"
-                        title="تعديل المنتج والصور"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(p.slug)}
-                        className="rounded-full p-2 text-destructive hover:bg-destructive/10"
-                        title="حذف المنتج"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }))}
+                      </td>
+                      {/* Per-variant stock controls */}
+                      <td className="p-3.5">
+                        <div className="space-y-1.5">
+                          {p.variants.map((v) => {
+                            const vStock =
+                              v.stock !== undefined ? v.stock : (p.stockQuantity ?? 50);
+                            const vLow = vStock <= (p.lowStockThreshold ?? 5);
+                            const vOut = vStock <= 0;
+                            return (
+                              <div key={v.label} className="flex items-center gap-1.5">
+                                <span
+                                  className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-black ${
+                                    vOut
+                                      ? "bg-destructive/15 text-destructive"
+                                      : vLow
+                                        ? "bg-amber-500/15 text-amber-700"
+                                        : "bg-emerald-500/10 text-emerald-700"
+                                  }`}
+                                >
+                                  {v.label}
+                                </span>
+                                <span
+                                  className={`inline-block h-2 w-2 rounded-full shrink-0 ${vOut ? "bg-destructive animate-ping" : vLow ? "bg-amber-500" : "bg-emerald-500"}`}
+                                />
+                                <button
+                                  onClick={() => updateVariantStock(p, v.label, vStock - 1)}
+                                  className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
+                                  title="تقليل"
+                                >
+                                  −
+                                </button>
+                                <input
+                                  type="number"
+                                  value={vStock}
+                                  onChange={(e) =>
+                                    updateVariantStock(p, v.label, Number(e.target.value))
+                                  }
+                                  className={`w-12 text-center rounded-md border bg-background text-xs py-0.5 font-bold outline-none ${vOut ? "text-destructive" : vLow ? "text-amber-700" : "text-emerald-700"}`}
+                                />
+                                <button
+                                  onClick={() => updateVariantStock(p, v.label, vStock + 1)}
+                                  className="h-5 w-5 rounded-md bg-muted hover:bg-muted/80 text-xs font-black flex items-center justify-center text-primary"
+                                  title="زيادة"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {/* Global low-stock indicator */}
+                          {anyLow && (
+                            <div className="text-[10px] font-bold text-destructive">
+                              ⚠ مخزون منخفض
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3.5">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-semibold">
+                          <ImageIcon className="h-3.5 w-3.5" /> {imgCount} صور
+                        </span>
+                      </td>
+                      <td className="p-3.5">
+                        <button
+                          onClick={() => toggleActive(p)}
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                            (p.isActive ?? true)
+                              ? "bg-emerald-500/15 text-emerald-700"
+                              : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {(p.isActive ?? true) ? (
+                            <Eye className="h-3 w-3" />
+                          ) : (
+                            <EyeOff className="h-3 w-3" />
+                          )}
+                          {(p.isActive ?? true) ? "نشط" : "معطل"}
+                        </button>
+                      </td>
+                      <td className="p-3.5 flex items-center gap-1">
+                        <button
+                          onClick={() => openEdit(p)}
+                          className="rounded-full p-2 text-primary hover:bg-muted"
+                          title="تعديل المنتج والصور"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteProduct(p.slug)}
+                          className="rounded-full p-2 text-destructive hover:bg-destructive/10"
+                          title="حذف المنتج"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -1029,7 +1177,10 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               <h3 className="font-extrabold text-base text-primary">
                 {editingProduct ? "تعديل بيانات وصور المنتج" : "إضافة منتج جديد للمتجر"}
               </h3>
-              <button onClick={() => setModalOpen(false)} className="rounded-full p-1 hover:bg-muted">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="rounded-full p-1 hover:bg-muted"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1039,8 +1190,12 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               <div className="rounded-2xl border bg-muted/30 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-primary block">صور المنتج (معرض الصور المتعددة)</span>
-                    <span className="text-[11px] text-muted-foreground">اختر صورة أو أكثر من جهازك، وحدد الصورة الرئيسية</span>
+                    <span className="text-xs font-bold text-primary block">
+                      صور المنتج (معرض الصور المتعددة)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      اختر صورة أو أكثر من جهازك، وحدد الصورة الرئيسية
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -1083,7 +1238,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 {form.images.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2">
                     {form.images.map((imgUrl, idx) => {
-                      const isPrimary = (form.image === imgUrl) || (!form.image && idx === 0);
+                      const isPrimary = form.image === imgUrl || (!form.image && idx === 0);
                       return (
                         <div
                           key={idx}
@@ -1091,7 +1246,11 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                             isPrimary ? "border-primary ring-2 ring-primary/30" : "border-border"
                           }`}
                         >
-                          <img src={imgUrl} alt="صورة المنتج" className="h-20 w-full object-cover rounded-xl" />
+                          <img
+                            src={imgUrl}
+                            alt="صورة المنتج"
+                            className="h-20 w-full object-cover rounded-xl"
+                          />
                           {isPrimary && (
                             <span className="absolute top-2 start-2 bg-primary text-primary-foreground text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-xs">
                               ⭐ رئيسية
@@ -1139,7 +1298,13 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   <span className="text-xs font-bold text-muted-foreground">التصنيف *</span>
                   <select
                     value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value as CategoryId, isCoffee: e.target.value === "coffee" })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        category: e.target.value as CategoryId,
+                        isCoffee: e.target.value === "coffee",
+                      })
+                    }
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="coffee">محاصيل القهوة المختصة</option>
@@ -1150,17 +1315,33 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 </label>
               </div>
 
-
               {/* Section 3: Dynamic Variants Manager (الأحجام والأسعار) */}
               <div className="rounded-2xl border bg-muted/30 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-primary block">الأحجام والأسعار (Variants)</span>
-                    <span className="text-[11px] text-muted-foreground">أضف حجماً واحداً أو أكثر مع السعر المستقل لكل حجم</span>
+                    <span className="text-xs font-bold text-primary block">
+                      الأحجام والأسعار (Variants)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      أضف حجماً واحداً أو أكثر مع السعر المستقل لكل حجم
+                    </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setForm({ ...form, variants: [...form.variants, { label: form.isCoffee ? "250g" : "قطعة", yer: form.sellingPriceYer, sar: form.sellingPriceSar, stock: 50 }] })}
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        variants: [
+                          ...form.variants,
+                          {
+                            label: form.isCoffee ? "250g" : "قطعة",
+                            yer: form.sellingPriceYer,
+                            sar: form.sellingPriceSar,
+                            stock: 50,
+                          },
+                        ],
+                      })
+                    }
                     className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-3 py-1.5 text-[11px] font-bold text-secondary hover:bg-secondary/25"
                   >
                     <Plus className="h-3 w-3" /> إضافة حجم
@@ -1173,54 +1354,83 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 )}
                 <div className="space-y-2">
                   {form.variants.map((v, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={v.label}
-                        onChange={(e) => {
-                          const updated = [...form.variants];
-                          updated[idx] = { ...updated[idx]!, label: e.target.value };
-                          setForm({ ...form, variants: updated });
-                        }}
-                        placeholder="مثال: 100g"
-                        className="w-24 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
-                      />
-                      <div className="flex-1 flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">YER</span>
+                    <div
+                      key={idx}
+                      className="flex flex-wrap sm:flex-nowrap items-center gap-2 pb-2 mb-2 border-b border-border/50 sm:border-none sm:pb-0 sm:mb-0 last:border-0 last:mb-0 last:pb-0"
+                    >
+                      <div className="w-full sm:w-24 shrink-0">
+                        <input
+                          type="text"
+                          value={v.label}
+                          onChange={(e) => {
+                            const updated = [...form.variants];
+                            updated[idx] = { ...updated[idx]!, label: e.target.value };
+                            setForm({ ...form, variants: updated });
+                          }}
+                          placeholder="مثال: 100g"
+                          className="w-full rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+
+                      <div className="flex-1 flex items-center gap-1 min-w-[90px]">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">
+                          YER
+                        </span>
                         <input
                           type="number"
                           value={v.yer || ""}
                           onChange={(e) => {
                             const updated = [...form.variants];
-                            updated[idx] = { ...updated[idx]!, yer: e.target.value ? Number(e.target.value) : ("" as any) };
+                            const val = e.target.value;
+                            updated[idx] = {
+                              ...updated[idx]!,
+                              yer: val === "" ? ("" as any) : Number(val),
+                            };
                             setForm({ ...form, variants: updated });
                           }}
-                          className="flex-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
                           placeholder="9000"
                         />
                       </div>
-                      <div className="flex-1 flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">SAR</span>
+
+                      <div className="flex-1 flex items-center gap-1 min-w-[90px]">
+                        <span className="text-[10px] text-muted-foreground font-bold shrink-0">
+                          SAR
+                        </span>
                         <input
                           type="number"
                           value={v.sar || ""}
                           onChange={(e) => {
                             const updated = [...form.variants];
-                            updated[idx] = { ...updated[idx]!, sar: e.target.value ? Number(e.target.value) : ("" as any) };
+                            const val = e.target.value;
+                            updated[idx] = {
+                              ...updated[idx]!,
+                              sar: val === "" ? ("" as any) : Number(val),
+                            };
                             setForm({ ...form, variants: updated });
                           }}
-                          className="flex-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
+                          className="w-full rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring"
                           placeholder="22"
                         />
                       </div>
-                      <div className="w-24 flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground font-bold shrink-0" title="المخزون">📦 الكمية</span>
+
+                      <div className="flex-1 flex items-center gap-1 min-w-[90px]">
+                        <span
+                          className="text-[10px] text-muted-foreground font-bold shrink-0"
+                          title="المخزون"
+                        >
+                          📦
+                        </span>
                         <input
                           type="number"
                           value={v.stock === undefined ? "" : v.stock}
                           onChange={(e) => {
                             const updated = [...form.variants];
-                            updated[idx] = { ...updated[idx]!, stock: e.target.value ? Number(e.target.value) : ("" as any) };
+                            const val = e.target.value;
+                            updated[idx] = {
+                              ...updated[idx]!,
+                              stock: val === "" ? ("" as any) : Number(val),
+                            };
                             setForm({ ...form, variants: updated });
                           }}
                           className="w-full rounded-xl border bg-background px-2 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-ring text-emerald-700"
@@ -1228,15 +1438,16 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                           required
                         />
                       </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           const updated = form.variants.filter((_, i) => i !== idx);
                           setForm({ ...form, variants: updated });
                         }}
-                        className="p-1 rounded-lg text-destructive hover:bg-destructive/10"
+                        className="p-1 shrink-0 rounded-lg text-destructive hover:bg-destructive/10"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
@@ -1244,20 +1455,34 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                 {/* Base price for fallback display */}
                 <div className="grid gap-2 sm:grid-cols-2 pt-1 border-t">
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground">السعر الأساسي YER (لحساب التكلفة)</span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      السعر الأساسي YER (لحساب التكلفة)
+                    </span>
                     <input
                       type="number"
                       value={form.sellingPriceYer || ""}
-                      onChange={(e) => setForm({ ...form, sellingPriceYer: e.target.value ? Number(e.target.value) : ("" as any) })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          sellingPriceYer: e.target.value ? Number(e.target.value) : ("" as any),
+                        })
+                      }
                       className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground">السعر الأساسي SAR (لحساب التكلفة)</span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      السعر الأساسي SAR (لحساب التكلفة)
+                    </span>
                     <input
                       type="number"
                       value={form.sellingPriceSar || ""}
-                      onChange={(e) => setForm({ ...form, sellingPriceSar: e.target.value ? Number(e.target.value) : ("" as any) })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          sellingPriceSar: e.target.value ? Number(e.target.value) : ("" as any),
+                        })
+                      }
                       className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
                     />
                   </label>
@@ -1271,7 +1496,12 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   <input
                     type="number"
                     value={form.costPriceYer || ""}
-                    onChange={(e) => setForm({ ...form, costPriceYer: e.target.value ? Number(e.target.value) : ("" as any) })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        costPriceYer: e.target.value ? Number(e.target.value) : ("" as any),
+                      })
+                    }
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: 5000"
                   />
@@ -1281,7 +1511,12 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   <input
                     type="number"
                     value={form.costPriceSar || ""}
-                    onChange={(e) => setForm({ ...form, costPriceSar: e.target.value ? Number(e.target.value) : ("" as any) })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        costPriceSar: e.target.value ? Number(e.target.value) : ("" as any),
+                      })
+                    }
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: 12"
                   />
@@ -1290,10 +1525,14 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
 
               {/* Section 5: Product Info (Origin, Process, Badge, Notes) */}
               <div className="rounded-2xl border bg-muted/30 p-4 space-y-3">
-                <span className="text-xs font-bold text-primary block">معلومات المنتج (للقهوة المختصة)</span>
+                <span className="text-xs font-bold text-primary block">
+                  معلومات المنتج (للقهوة المختصة)
+                </span>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground">المنشأ (Origin)</span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      المنشأ (Origin)
+                    </span>
                     <input
                       value={form.origin}
                       onChange={(e) => setForm({ ...form, origin: e.target.value })}
@@ -1302,7 +1541,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground">المعالجة (Process)</span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      المعالجة (Process)
+                    </span>
                     <input
                       value={form.process}
                       onChange={(e) => setForm({ ...form, process: e.target.value })}
@@ -1311,7 +1552,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground">الشارة (Badge)</span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      الشارة (Badge)
+                    </span>
                     <input
                       value={form.badge}
                       onChange={(e) => setForm({ ...form, badge: e.target.value })}
@@ -1321,10 +1564,20 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   </label>
                 </div>
                 <label className="block">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">إيحاءات النكهة (مفصولة بفاصلة)</span>
+                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">
+                    إيحاءات النكهة (مفصولة بفاصلة)
+                  </span>
                   <input
                     value={form.notes.join("، ")}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value.split(/[،,]/).map(s => s.trim()).filter(Boolean) })}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        notes: e.target.value
+                          .split(/[،,]/)
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
                     className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
                     placeholder="مثال: كرز، زهور بيضاء، سكر قصب"
                   />
@@ -1332,7 +1585,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               </div>
 
               <label className="block">
-                <span className="text-xs font-bold text-muted-foreground">الوصف المختصر / الإيحاءات</span>
+                <span className="text-xs font-bold text-muted-foreground">
+                  الوصف المختصر / الإيحاءات
+                </span>
                 <input
                   value={form.short}
                   onChange={(e) => setForm({ ...form, short: e.target.value })}
@@ -1342,7 +1597,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
               </label>
 
               <label className="block">
-                <span className="text-xs font-bold text-muted-foreground">الوصف التفصيلي للمنتج</span>
+                <span className="text-xs font-bold text-muted-foreground">
+                  الوصف التفصيلي للمنتج
+                </span>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -1360,7 +1617,10 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                   onChange={(e) => setForm({ ...form, bestSeller: e.target.checked })}
                   className="h-4 w-4 rounded-md border-secondary text-secondary"
                 />
-                <label htmlFor="bestSellerCheck" className="text-xs font-bold text-primary cursor-pointer">
+                <label
+                  htmlFor="bestSellerCheck"
+                  className="text-xs font-bold text-primary cursor-pointer"
+                >
                   ⭐ إظهار هذا المنتج في قسم "المنتجات الأكثر مبيعاً" بالصفحة الرئيسية للمتجر
                 </label>
               </div>
@@ -1434,7 +1694,8 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
   };
 
   const deleteOrder = async (id: string, code: string) => {
-    if (!confirm(`هل أنت متأكد من حذف الطلب "${code}" نهائياً؟ لا يمكن التراجع عن هذه العملية.`)) return;
+    if (!confirm(`هل أنت متأكد من حذف الطلب "${code}" نهائياً؟ لا يمكن التراجع عن هذه العملية.`))
+      return;
     try {
       const { error } = await supabase.from("orders").delete().eq("id", id);
       if (error) throw error;
@@ -1447,7 +1708,19 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
 
   const exportOrdersCSV = () => {
     const rows = [
-      ["رقم الطلب", "اسم العميل", "الهاتف", "المنطقة", "طريقة التوصيل", "رقم الحوالة", "الحالة", "الإجمالي YER", "الإجمالي SAR", "التاريخ", "المنتجات"],
+      [
+        "رقم الطلب",
+        "اسم العميل",
+        "الهاتف",
+        "المنطقة",
+        "طريقة التوصيل",
+        "رقم الحوالة",
+        "الحالة",
+        "الإجمالي YER",
+        "الإجمالي SAR",
+        "التاريخ",
+        "المنتجات",
+      ],
     ];
     filtered.forEach((o) => {
       const items = o.items.map((it) => `${it.name}×${it.qty}`).join(" | ");
@@ -1465,7 +1738,9 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
         items,
       ]);
     });
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = rows
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1478,13 +1753,16 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
 
   const filtered = orders.filter((o) => filter === "all" || o.status === filter);
 
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-extrabold text-primary">الطلبات والتتبع المباشر (Real-Time Orders)</h3>
-          <p className="text-xs text-muted-foreground">استقبال وتتبع شحنات العملاء بالوقت الحقيقي</p>
+          <h3 className="text-lg font-extrabold text-primary">
+            الطلبات والتتبع المباشر (Real-Time Orders)
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            استقبال وتتبع شحنات العملاء بالوقت الحقيقي
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1523,7 +1801,6 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
         </div>
       </div>
 
-
       {filtered.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border bg-card p-12 text-center shadow-xs">
           <Package className="mb-3 h-8 w-8 text-secondary" />
@@ -1537,7 +1814,10 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
                 <div>
                   <div className="text-lg font-black tracking-wide text-primary">{o.code}</div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(o.created_at).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" })}
+                    {new Date(o.created_at).toLocaleString("ar", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
                   </div>
                 </div>
 
@@ -1559,11 +1839,13 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
                 </div>
               </div>
 
-
               <div className="mt-4 grid gap-3 text-xs sm:grid-cols-3">
                 <Info label="اسم العميل" value={o.customer_name} />
                 <Info label="رقم الجوال" value={o.phone} />
-                <Info label="المنطقة" value={o.city_type === "aden" ? "داخل عدن" : `محافظة ${o.governorate}`} />
+                <Info
+                  label="المنطقة"
+                  value={o.city_type === "aden" ? "داخل عدن" : `محافظة ${o.governorate}`}
+                />
                 <Info label="طريقة الشحن" value={o.delivery_method} />
                 <Info label="رقم الحوالة" value={o.txn_ref} />
                 {o.sender_name && <Info label="اسم المودع" value={o.sender_name} />}
@@ -1573,7 +1855,10 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
               <div className="mt-4 rounded-2xl bg-muted/40 p-3.5 text-xs space-y-1.5 border">
                 <div className="font-bold text-primary mb-1">تفاصيل العناصر والكميات:</div>
                 {o.items.map((it, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-muted-foreground">
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center text-muted-foreground"
+                  >
                     <span>
                       {it.name} {it.options ? `(${it.options})` : ""} × {it.qty}
                     </span>
@@ -1652,8 +1937,12 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
       {trackingModalOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-2xl">
-            <h3 className="font-extrabold text-base text-primary mb-2">تحديث حالة تتبع الطلب {trackingModalOrder.code}</h3>
-            <p className="text-xs text-muted-foreground mb-4">اكتب ملاحظة التتبع التي ستظهر للعميل فوراً</p>
+            <h3 className="font-extrabold text-base text-primary mb-2">
+              تحديث حالة تتبع الطلب {trackingModalOrder.code}
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              اكتب ملاحظة التتبع التي ستظهر للعميل فوراً
+            </p>
             <textarea
               value={trackingNote}
               onChange={(e) => setTrackingNote(e.target.value)}
@@ -1661,10 +1950,16 @@ function OrdersModule({ orders, refetch }: { orders: Order[]; refetch: () => voi
               className="w-full rounded-2xl border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-ring min-h-24"
             />
             <div className="flex justify-end gap-2 mt-4">
-              <button onClick={() => setTrackingModalOrder(null)} className="rounded-full border px-4 py-2 text-xs font-bold">
+              <button
+                onClick={() => setTrackingModalOrder(null)}
+                className="rounded-full border px-4 py-2 text-xs font-bold"
+              >
                 إلغاء
               </button>
-              <button onClick={saveTrackingNote} className="rounded-full bg-primary px-5 py-2 text-xs font-bold text-primary-foreground">
+              <button
+                onClick={saveTrackingNote}
+                className="rounded-full bg-primary px-5 py-2 text-xs font-bold text-primary-foreground"
+              >
                 حفظ والتحديث
               </button>
             </div>
@@ -1718,8 +2013,7 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
     if (!search.trim()) return true;
     const q = search.toLowerCase().trim();
     return (
-      (c.full_name && c.full_name.toLowerCase().includes(q)) ||
-      (c.phone && c.phone.includes(q))
+      (c.full_name && c.full_name.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q))
     );
   });
 
@@ -1727,8 +2021,12 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-extrabold text-primary">إدارة سجلات العملاء والإنفاق (Customers Database)</h3>
-          <p className="text-xs text-muted-foreground">استعراض العملاء المسجلين في قاعدة البيانات وسجل مشترياتهم وإجمالي الإنفاق</p>
+          <h3 className="text-lg font-extrabold text-primary">
+            إدارة سجلات العملاء والإنفاق (Customers Database)
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            استعراض العملاء المسجلين في قاعدة البيانات وسجل مشترياتهم وإجمالي الإنفاق
+          </p>
         </div>
         <div className="w-full sm:w-64">
           <input
@@ -1764,9 +2062,20 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                 </tr>
               ) : (
                 filtered.map((c) => {
-                  const customerOrders = orders.filter((o) => o.user_id === c.id || o.phone === c.phone || o.customer_name === c.full_name);
-                  const totalSpentYer = customerOrders.reduce((s, o) => s + Number(o.total_yer || o.total || 0), 0);
-                  const totalSpentSar = customerOrders.reduce((s, o) => s + Number(o.total_sar || Math.round(Number(o.total_yer || o.total || 0) / 400)), 0);
+                  const customerOrders = orders.filter(
+                    (o) =>
+                      o.user_id === c.id || o.phone === c.phone || o.customer_name === c.full_name,
+                  );
+                  const totalSpentYer = customerOrders.reduce(
+                    (s, o) => s + Number(o.total_yer || o.total || 0),
+                    0,
+                  );
+                  const totalSpentSar = customerOrders.reduce(
+                    (s, o) =>
+                      s +
+                      Number(o.total_sar || Math.round(Number(o.total_yer || o.total || 0) / 400)),
+                    0,
+                  );
 
                   return (
                     <tr key={c.id} className="hover:bg-muted/30 transition-colors">
@@ -1776,17 +2085,30 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                         </div>
                         <div>
                           <div>{c.full_name}</div>
-                          <div className="text-[10px] text-muted-foreground font-normal">عميل مسجل</div>
+                          <div className="text-[10px] text-muted-foreground font-normal">
+                            عميل مسجل
+                          </div>
                         </div>
                       </td>
-                      <td className="p-3.5 font-mono font-semibold" dir="ltr">{c.phone || "—"}</td>
+                      <td className="p-3.5 font-mono font-semibold" dir="ltr">
+                        {c.phone || "—"}
+                      </td>
                       <td className="p-3.5 font-bold">{customerOrders.length} طلبات</td>
                       <td className="p-3.5 font-extrabold text-emerald-700">
-                        {currency === "YER" ? formatPrice(totalSpentYer) : `${totalSpentSar.toLocaleString()} ريال سعودي`}
+                        {currency === "YER"
+                          ? formatPrice(totalSpentYer)
+                          : `${totalSpentSar.toLocaleString()} ريال سعودي`}
                       </td>
                       <td className="p-3.5">
                         <button
-                          onClick={() => setSelectedCustomer({ ...c, orders: customerOrders, totalSpentYer, totalSpentSar })}
+                          onClick={() =>
+                            setSelectedCustomer({
+                              ...c,
+                              orders: customerOrders,
+                              totalSpentYer,
+                              totalSpentSar,
+                            })
+                          }
                           className="rounded-full border bg-background px-3.5 py-1.5 text-[11px] font-bold text-primary hover:bg-muted shadow-2xs"
                         >
                           عرض السجل ({customerOrders.length})
@@ -1808,9 +2130,14 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
             <div className="flex items-center justify-between border-b pb-3 mb-4">
               <div>
                 <h3 className="font-extrabold text-base text-primary">سجل مشتريات العميل</h3>
-                <div className="text-xs text-muted-foreground">{selectedCustomer.full_name} • {selectedCustomer.phone}</div>
+                <div className="text-xs text-muted-foreground">
+                  {selectedCustomer.full_name} • {selectedCustomer.phone}
+                </div>
               </div>
-              <button onClick={() => setSelectedCustomer(null)} className="rounded-full p-1 hover:bg-muted">
+              <button
+                onClick={() => setSelectedCustomer(null)}
+                className="rounded-full p-1 hover:bg-muted"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1826,10 +2153,15 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
 
             <div className="space-y-3">
               {selectedCustomer.orders.length === 0 ? (
-                <p className="text-center text-xs text-muted-foreground py-6">لا توجد طلبات مسجلة لهذا العميل بعد</p>
+                <p className="text-center text-xs text-muted-foreground py-6">
+                  لا توجد طلبات مسجلة لهذا العميل بعد
+                </p>
               ) : (
                 selectedCustomer.orders.map((o: Order) => (
-                  <div key={o.id} className="rounded-2xl border p-3.5 text-xs space-y-2 bg-background">
+                  <div
+                    key={o.id}
+                    className="rounded-2xl border p-3.5 text-xs space-y-2 bg-background"
+                  >
                     <div className="flex justify-between font-bold text-primary">
                       <span>كود الطلب: {o.code}</span>
                       <span className="font-extrabold text-emerald-700">
@@ -1840,12 +2172,16 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
                     </div>
                     <div className="text-[11px] text-muted-foreground flex justify-between">
                       <span>التاريخ: {new Date(o.created_at).toLocaleDateString("ar")}</span>
-                      <span>الحالة: {orderStatuses.find((s) => s.id === o.status)?.label ?? o.status}</span>
+                      <span>
+                        الحالة: {orderStatuses.find((s) => s.id === o.status)?.label ?? o.status}
+                      </span>
                     </div>
                     <div className="text-[11px] bg-muted/40 p-2 rounded-xl">
                       {o.items.map((it, idx) => (
                         <div key={idx} className="flex justify-between">
-                          <span>{it.name} × {it.qty}</span>
+                          <span>
+                            {it.name} × {it.qty}
+                          </span>
                           <span>
                             {currency === "YER"
                               ? formatPrice((it.price_yer || it.price || 0) * it.qty)
@@ -1868,31 +2204,58 @@ function CustomersModule({ customers, orders }: { customers: any[]; orders: Orde
 /* ====================================================================
    MODULE 5: Store Content & Branding Customization (تخصيص المحتوى)
    ==================================================================== */
-function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; refetch: () => void }) {
+function StoreSettingsModule({
+  settings,
+  refetch,
+}: {
+  settings: StoreSettings;
+  refetch: () => void;
+}) {
   const [storeName, setStoreName] = useState(settings?.store_name || defaultStoreName);
   const [logoUrl, setLogoUrl] = useState(settings?.logo_url || "");
   const [announcementText, setAnnouncementText] = useState(settings?.announcement_text || "");
   const [enabled, setEnabled] = useState(settings?.announcement_enabled ?? true);
-  const [whatsappNumber, setWhatsappNumber] = useState(settings?.whatsapp_number || defaultWhatsAppNumber);
-  const [pickupAddress, setPickupAddress] = useState(settings?.pickup_address || defaultPickupAddress);
-  const [adenDeliveryFee, setAdenDeliveryFee] = useState(settings?.aden_delivery_fee || defaultAdenDeliveryFee);
-  const [adenDeliveryFeeSar, setAdenDeliveryFeeSar] = useState(settings?.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar);
-  const [pickupDeliveryFee, setPickupDeliveryFee] = useState(settings?.pickup_delivery_fee || defaultPickupFee);
-  const [pickupDeliveryFeeSar, setPickupDeliveryFeeSar] = useState(settings?.pickup_delivery_fee_sar || defaultPickupFeeSar);
-  const [otherDeliveryFee, setOtherDeliveryFee] = useState(settings?.other_delivery_fee || defaultOtherDeliveryFee);
-  const [otherDeliveryFeeSar, setOtherDeliveryFeeSar] = useState(settings?.other_delivery_fee_sar || defaultOtherDeliveryFeeSar);
+  const [whatsappNumber, setWhatsappNumber] = useState(
+    settings?.whatsapp_number || defaultWhatsAppNumber,
+  );
+  const [pickupAddress, setPickupAddress] = useState(
+    settings?.pickup_address || defaultPickupAddress,
+  );
+  const [adenDeliveryFee, setAdenDeliveryFee] = useState(
+    settings?.aden_delivery_fee || defaultAdenDeliveryFee,
+  );
+  const [adenDeliveryFeeSar, setAdenDeliveryFeeSar] = useState(
+    settings?.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
+  );
+  const [pickupDeliveryFee, setPickupDeliveryFee] = useState(
+    settings?.pickup_delivery_fee || defaultPickupFee,
+  );
+  const [pickupDeliveryFeeSar, setPickupDeliveryFeeSar] = useState(
+    settings?.pickup_delivery_fee_sar || defaultPickupFeeSar,
+  );
+  const [otherDeliveryFee, setOtherDeliveryFee] = useState(
+    settings?.other_delivery_fee || defaultOtherDeliveryFee,
+  );
+  const [otherDeliveryFeeSar, setOtherDeliveryFeeSar] = useState(
+    settings?.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
+  );
   const [accounts, setAccounts] = useState<BankAccount[]>(
-    settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts
+    settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts,
   );
   // Hero Banners state
-  const [heroBannersEdit, setHeroBannersEdit] = useState<{ image: string; title: string; desc: string }[]>(
-    (settings as any)?.hero_banners_list || []
-  );
+  const [heroBannersEdit, setHeroBannersEdit] = useState<
+    { image: string; title: string; desc: string }[]
+  >((settings as any)?.hero_banners_list || []);
   const [newBanner, setNewBanner] = useState({ image: "", title: "", desc: "" });
   // About & Footer settings
-  const [instagramHandle, setInstagramHandle] = useState((settings as any)?.instagram_handle || "khasab");
+  const [instagramHandle, setInstagramHandle] = useState(
+    (settings as any)?.instagram_handle || "khasab",
+  );
   const [aboutText, setAboutText] = useState((settings as any)?.about_text || "");
-  const [footerText, setFooterText] = useState((settings as any)?.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.");
+  const [footerText, setFooterText] = useState(
+    (settings as any)?.footer_text ||
+      "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
+  );
   const [socialLinks, setSocialLinks] = useState<any[]>(settings?.social_links || []);
   const [saving, setSaving] = useState(false);
   const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
@@ -1905,14 +2268,18 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
       const ext = file.name.split(".").pop() || "png";
       const filePath = `brand/logo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
-      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
       if (publicUrlData?.publicUrl) {
         setLogoUrl(publicUrlData.publicUrl);
         toast.success("تم رفع وتعيين شعار المتجر بنجاح");
@@ -1927,7 +2294,10 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
   // Add new account row
   const addAccount = () => {
-    setAccounts([...accounts, { bank: "بنك الكريمي", number: "", holder: "محمصة خصب للقهوة", logo_type: "kuraimi" }]);
+    setAccounts([
+      ...accounts,
+      { bank: "بنك الكريمي", number: "", holder: "محمصة خصب للقهوة", logo_type: "kuraimi" },
+    ]);
   };
 
   // Update account row
@@ -1943,15 +2313,19 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
       setUploadingLogoIdx(index);
       const ext = file.name.split(".").pop() || "png";
       const filePath = `bank-logos/logo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
-      
-      const { error: uploadError } = await supabase.storage.from("product-images").upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
-      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
       if (publicUrlData?.publicUrl) {
         updateAccount(index, "custom_logo_url", publicUrlData.publicUrl);
         toast.success("تم رفع وتعيين شعار البنك بنجاح");
@@ -2021,7 +2395,10 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
       if (targetId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any).from("store_settings").update(payload).eq("id", targetId);
+        const { error } = await (supabase as any)
+          .from("store_settings")
+          .update(payload)
+          .eq("id", targetId);
         saveErr = error;
       } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2044,9 +2421,12 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-extrabold text-primary">تخصيص الهوية والشعار وشريط الإعلانات والحسابات</h3>
+        <h3 className="text-lg font-extrabold text-primary">
+          تخصيص الهوية والشعار وشريط الإعلانات والحسابات
+        </h3>
         <p className="text-xs text-muted-foreground">
-          تحكم كامل في اسم وشعار المحمصة في أعلى الموقع، شريط الإعلانات، رسوم التوصيل، ونقطة الاستلام، وحسابات البنوك
+          تحكم كامل في اسم وشعار المحمصة في أعلى الموقع، شريط الإعلانات، رسوم التوصيل، ونقطة
+          الاستلام، وحسابات البنوك
         </p>
       </div>
 
@@ -2125,7 +2505,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                 className="h-12 w-12 rounded-full object-cover ring-2 ring-primary/20 bg-card shrink-0"
               />
               <div>
-                <div className="text-[11px] font-bold text-muted-foreground">معاينة مظهر الشعار والاسم في أعلى الموقع:</div>
+                <div className="text-[11px] font-bold text-muted-foreground">
+                  معاينة مظهر الشعار والاسم في أعلى الموقع:
+                </div>
                 <div className="text-base font-black text-primary">{storeName || "محمصة خصب"}</div>
               </div>
             </div>
@@ -2175,7 +2557,8 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
             3. بانرات الصفحة الرئيسية (Hero Banners)
           </h4>
           <p className="text-xs text-muted-foreground">
-            أضف وعدّل البانرات التي تظهر في منتصف الصفحة الرئيسية. كل بانر يحتاج رابط صورة + عنوان + وصف.
+            أضف وعدّل البانرات التي تظهر في منتصف الصفحة الرئيسية. كل بانر يحتاج رابط صورة + عنوان +
+            وصف.
           </p>
 
           {/* Existing Banners List */}
@@ -2228,7 +2611,14 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   />
                 </div>
                 {b.image && (
-                  <img src={b.image} alt="معاينة" className="h-20 w-full object-cover rounded-xl" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img
+                    src={b.image}
+                    alt="معاينة"
+                    className="h-20 w-full object-cover rounded-xl"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
                 )}
               </div>
             ))}
@@ -2281,40 +2671,52 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </h4>
 
           <label className="block">
-            <span className="text-xs font-bold text-muted-foreground block mb-1">حساب إنستغرام</span>
+            <span className="text-xs font-bold text-muted-foreground block mb-1">
+              حساب إنستغرام
+            </span>
             <div className="flex items-center gap-2 rounded-2xl border bg-background px-4 py-2.5">
               <span className="text-sm font-bold text-muted-foreground">@</span>
               <input
                 type="text"
-                value={instagramHandle.replace('@', '')}
-                onChange={(e) => setInstagramHandle(e.target.value.replace('@', ''))}
+                value={instagramHandle.replace("@", "")}
+                onChange={(e) => setInstagramHandle(e.target.value.replace("@", ""))}
                 className="flex-1 text-xs outline-none bg-transparent font-mono font-bold"
                 placeholder="khasab"
               />
             </div>
-            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر في الفوتر — مثال: khasab</span>
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              يظهر في الفوتر — مثال: khasab
+            </span>
           </label>
 
           <label className="block">
-            <span className="text-xs font-bold text-muted-foreground block mb-1">نص صفحة "عن المحمصة"</span>
+            <span className="text-xs font-bold text-muted-foreground block mb-1">
+              نص صفحة "عن المحمصة"
+            </span>
             <textarea
               value={aboutText}
               onChange={(e) => setAboutText(e.target.value)}
               className="w-full rounded-2xl border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-ring min-h-[120px]"
               placeholder="اكتب قصة محمصتك هنا، سيظهر هذا النص في صفحة 'عن خصب'..."
             />
-            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر في صفحة /about</span>
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              يظهر في صفحة /about
+            </span>
           </label>
 
           <label className="block">
-            <span className="text-xs font-bold text-muted-foreground block mb-1">نص الفوتر (أسفل الموقع)</span>
+            <span className="text-xs font-bold text-muted-foreground block mb-1">
+              نص الفوتر (أسفل الموقع)
+            </span>
             <textarea
               value={footerText}
               onChange={(e) => setFooterText(e.target.value)}
               className="w-full rounded-2xl border bg-background p-3 text-xs outline-none focus:ring-2 focus:ring-ring min-h-[80px]"
               placeholder="اكتب وصفاً قصيراً لمتجرك..."
             />
-            <span className="text-[10px] text-muted-foreground mt-1 block">يظهر تحت اسم المتجر في جميع الصفحات</span>
+            <span className="text-[10px] text-muted-foreground mt-1 block">
+              يظهر تحت اسم المتجر في جميع الصفحات
+            </span>
           </label>
         </div>
 
@@ -2324,11 +2726,16 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
             <Globe className="h-4 w-4 text-secondary" />
             روابط التواصل الاجتماعي
           </h4>
-          <p className="text-xs text-muted-foreground">أضف روابط حساباتك في مختلف المنصات (ستظهر في الفوتر)</p>
+          <p className="text-xs text-muted-foreground">
+            أضف روابط حساباتك في مختلف المنصات (ستظهر في الفوتر)
+          </p>
 
           <div className="space-y-3">
             {socialLinks.map((link, idx) => (
-              <div key={idx} className="flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-3">
+              <div
+                key={idx}
+                className="flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-3"
+              >
                 <select
                   value={link.platform}
                   onChange={(e) => {
@@ -2438,9 +2845,13 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           <div className="grid gap-4 sm:grid-cols-3">
             {/* Aden Delivery */}
             <div className="rounded-2xl border bg-background p-3.5 space-y-2">
-              <span className="text-xs font-extrabold text-primary block">توصيل منزلي داخل عدن</span>
+              <span className="text-xs font-extrabold text-primary block">
+                توصيل منزلي داخل عدن
+              </span>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال اليمني (YER)
+                </span>
                 <input
                   type="text"
                   required
@@ -2451,7 +2862,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                 />
               </label>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال السعودي (SAR)
+                </span>
                 <input
                   type="text"
                   value={adenDeliveryFeeSar}
@@ -2464,9 +2877,13 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
             {/* Pickup Point */}
             <div className="rounded-2xl border bg-background p-3.5 space-y-2">
-              <span className="text-xs font-extrabold text-primary block">استلام من الفرع (الحجاز)</span>
+              <span className="text-xs font-extrabold text-primary block">
+                استلام من الفرع (الحجاز)
+              </span>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال اليمني (YER)
+                </span>
                 <input
                   type="text"
                   required
@@ -2477,7 +2894,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                 />
               </label>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال السعودي (SAR)
+                </span>
                 <input
                   type="text"
                   value={pickupDeliveryFeeSar}
@@ -2490,9 +2909,13 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
 
             {/* Governorates */}
             <div className="rounded-2xl border bg-background p-3.5 space-y-2">
-              <span className="text-xs font-extrabold text-primary block">شحن خارج عدن (المحافظات)</span>
+              <span className="text-xs font-extrabold text-primary block">
+                شحن خارج عدن (المحافظات)
+              </span>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال اليمني (YER)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال اليمني (YER)
+                </span>
                 <input
                   type="text"
                   required
@@ -2503,7 +2926,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                 />
               </label>
               <label className="block">
-                <span className="text-[10px] font-bold text-muted-foreground block mb-1">بالريال السعودي (SAR)</span>
+                <span className="text-[10px] font-bold text-muted-foreground block mb-1">
+                  بالريال السعودي (SAR)
+                </span>
                 <input
                   type="text"
                   value={otherDeliveryFeeSar}
@@ -2533,15 +2958,13 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
           </div>
 
           <p className="text-xs text-muted-foreground">
-            اختر البنك من القائمة لشعاره الرسمي أو ارفع صورة شعار مخصص، واكتب رقم الحساب واسم المستفيد:
+            اختر البنك من القائمة لشعاره الرسمي أو ارفع صورة شعار مخصص، واكتب رقم الحساب واسم
+            المستفيد:
           </p>
 
           <div className="space-y-4">
             {accounts.map((acc, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl border bg-background p-4 space-y-3 shadow-xs"
-              >
+              <div key={idx} className="rounded-2xl border bg-background p-4 space-y-3 shadow-xs">
                 <div className="grid gap-3 sm:grid-cols-[auto_1.1fr_1.2fr_1.1fr_1.1fr_auto] items-center">
                   {/* Bank Logo Preview */}
                   <div className="pt-2 sm:pt-0">
@@ -2554,7 +2977,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   </div>
 
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">نوع وشعار البنك</span>
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      نوع وشعار البنك
+                    </span>
                     <select
                       value={acc.logo_type || "other"}
                       onChange={(e) => {
@@ -2579,7 +3004,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   </label>
 
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم البنك المعروض</span>
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      اسم البنك المعروض
+                    </span>
                     <input
                       type="text"
                       required
@@ -2591,7 +3018,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   </label>
 
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">رقم الحساب / المحفظة</span>
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      رقم الحساب / المحفظة
+                    </span>
                     <input
                       type="text"
                       required
@@ -2604,7 +3033,9 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                   </label>
 
                   <label className="block">
-                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">اسم صاحب الحساب</span>
+                    <span className="text-[11px] font-bold text-muted-foreground block mb-1">
+                      اسم صاحب الحساب
+                    </span>
                     <input
                       type="text"
                       required
@@ -2630,11 +3061,13 @@ function StoreSettingsModule({ settings, refetch }: { settings: StoreSettings; r
                 {/* Custom Logo Upload / URL Options */}
                 <div className="pt-2 border-t flex flex-wrap items-center gap-3 text-xs">
                   <span className="font-bold text-muted-foreground text-[11px]">تخصيص الشعار:</span>
-                  
+
                   {/* File Upload Button */}
                   <label className="inline-flex items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 font-bold text-primary cursor-pointer hover:bg-muted transition-colors">
                     <Upload className="h-3.5 w-3.5 text-secondary" />
-                    <span>{uploadingLogoIdx === idx ? "جارِ الرفع…" : "رفع صورة شعار من الجهاز"}</span>
+                    <span>
+                      {uploadingLogoIdx === idx ? "جارِ الرفع…" : "رفع صورة شعار من الجهاز"}
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
@@ -2693,15 +3126,20 @@ function SecurityModule({ customers }: { customers: any[] }) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-extrabold text-primary">الأمان وصلاحيات الوصول (Security & RBAC)</h3>
-        <p className="text-xs text-muted-foreground">إدارة أدوار المدراء والصلاحيات عبر Supabase Row Level Security</p>
+        <h3 className="text-lg font-extrabold text-primary">
+          الأمان وصلاحيات الوصول (Security & RBAC)
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          إدارة أدوار المدراء والصلاحيات عبر Supabase Row Level Security
+        </p>
       </div>
 
       <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4 max-w-2xl">
         <div className="flex items-center gap-3 text-emerald-700 bg-emerald-500/10 p-3.5 rounded-2xl border border-emerald-300/40">
           <ShieldCheck className="h-6 w-6 shrink-0" />
           <div className="text-xs font-bold">
-            نظام الحماية مفعل بالكامل (Role-Based Access Control - RBAC) وسياسات Row Level Security تأمّن كافة الجداول والـ Storage Buckets.
+            نظام الحماية مفعل بالكامل (Role-Based Access Control - RBAC) وسياسات Row Level Security
+            تأمّن كافة الجداول والـ Storage Buckets.
           </div>
         </div>
 
@@ -2754,7 +3192,9 @@ function StatCard({
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-muted-foreground">{title}</span>
-        <div className={`grid h-9 w-9 place-items-center rounded-2xl ${highlight ? "bg-secondary text-secondary-foreground" : "bg-primary/10 text-primary"}`}>
+        <div
+          className={`grid h-9 w-9 place-items-center rounded-2xl ${highlight ? "bg-secondary text-secondary-foreground" : "bg-primary/10 text-primary"}`}
+        >
           <Icon className="h-4 w-4" />
         </div>
       </div>

@@ -1,10 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-} from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { SiteFooter } from "@/components/site-footer";
@@ -46,13 +41,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-destructive/10 text-destructive mb-4">
           ⚠️
         </div>
-        <h1 className="text-xl font-extrabold text-primary">
-          تعذر تحميل الصفحة
-        </h1>
-        <p className="mt-2 text-xs text-muted-foreground">
-          حدث خطأ أثناء معالجة الصفحة:
-        </p>
-        <div className="mt-4 p-3 rounded-2xl bg-muted/60 text-destructive text-xs font-mono text-start break-words border max-h-48 overflow-y-auto" dir="ltr">
+        <h1 className="text-xl font-extrabold text-primary">تعذر تحميل الصفحة</h1>
+        <p className="mt-2 text-xs text-muted-foreground">حدث خطأ أثناء معالجة الصفحة:</p>
+        <div
+          className="mt-4 p-3 rounded-2xl bg-muted/60 text-destructive text-xs font-mono text-start break-words border max-h-48 overflow-y-auto"
+          dir="ltr"
+        >
           {error?.message || String(error)}
         </div>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -102,8 +96,6 @@ function RootComponent() {
     }
   }, [router, queryClient]);
 
-
-
   return (
     <QueryClientProvider client={queryClient}>
       <CurrencyProvider>
@@ -122,4 +114,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

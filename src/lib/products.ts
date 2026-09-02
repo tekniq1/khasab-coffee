@@ -15,19 +15,46 @@ export const toolsBanner = tools.url;
 export const brandName = "محمصة خصب";
 
 export const heroBanners = [
-  { image: beans.url, title: "محاصيل بن مختصة", desc: "محاصيل محمّصة طازجة أسبوعياً من أجود المزارع العالمية" },
-  { image: kit.url, title: "طقم تقطير القهوة 2in1", desc: "قمع + سيرفر لتجربة تقطير مثالية باحترافية" },
-  { image: tools.url, title: "مو بس محصولك.. عدّتك علينا", desc: "جميع أدوات ومستلزمات الباريستا في مكان واحد" },
+  {
+    image: beans.url,
+    title: "محاصيل بن مختصة",
+    desc: "محاصيل محمّصة طازجة أسبوعياً من أجود المزارع العالمية",
+  },
+  {
+    image: kit.url,
+    title: "طقم تقطير القهوة 2in1",
+    desc: "قمع + سيرفر لتجربة تقطير مثالية باحترافية",
+  },
+  {
+    image: tools.url,
+    title: "مو بس محصولك.. عدّتك علينا",
+    desc: "جميع أدوات ومستلزمات الباريستا في مكان واحد",
+  },
   { image: drippers.url, title: "أقماع تقطير زجاجية", desc: "تصميم مضلع احترافي بمقاسات 01 و 02" },
 ];
 
 export type CategoryId = "coffee" | "tools" | "matcha" | "green";
 
 export const categories: { id: CategoryId; name: string; desc: string; image: string }[] = [
-  { id: "coffee", name: "محاصيل القهوة المختصة", desc: "محاصيل مختارة محمّصة طازجة أسبوعياً", image: beans.url },
-  { id: "tools", name: "أدوات وإكسسوارات الباريستا", desc: "أقماع وسيرفرات وفلاتر وأدوات احترافية", image: tools.url },
+  {
+    id: "coffee",
+    name: "محاصيل القهوة المختصة",
+    desc: "محاصيل مختارة محمّصة طازجة أسبوعياً",
+    image: beans.url,
+  },
+  {
+    id: "tools",
+    name: "أدوات وإكسسوارات الباريستا",
+    desc: "أقماع وسيرفرات وفلاتر وأدوات احترافية",
+    image: tools.url,
+  },
   { id: "matcha", name: "ماتشا", desc: "قريباً — أجود أنواع الماتشا الفاخرة", image: kit.url },
-  { id: "green", name: "محاصيل البن الخضراء", desc: "قريباً — محاصيل البن الأخضر الخام", image: filters.url },
+  {
+    id: "green",
+    name: "محاصيل البن الخضراء",
+    desc: "قريباً — محاصيل البن الأخضر الخام",
+    image: filters.url,
+  },
 ];
 
 export type Variant = { label: string; yer: number; sar: number; stock?: number };
@@ -69,7 +96,8 @@ export const products: Product[] = [
     image: beans.url,
     images: [beans.url],
     short: "شوكولاتة وسكر بني وحمضيات | معالجة مغسولة",
-    description: "محصول كولمبي استثنائي بمعالجة مغسولة، متوازن وسهل التحضير بجميع طرق التقطير والإسبريسو.",
+    description:
+      "محصول كولمبي استثنائي بمعالجة مغسولة، متوازن وسهل التحضير بجميع طرق التقطير والإسبريسو.",
     stockQuantity: 45,
     lowStockThreshold: 5,
     costPriceYer: 5500,
@@ -92,7 +120,8 @@ export const products: Product[] = [
     image: beans.url,
     images: [beans.url],
     short: "تفاح أخضر وبابايا وعسل | معالجة مجففة",
-    description: "محصول إثيوبي فاخر بمعالجة مجففة يمنح حلاوة عالية ونكهات فواكه واضحة وقواماً حريرياً.",
+    description:
+      "محصول إثيوبي فاخر بمعالجة مجففة يمنح حلاوة عالية ونكهات فواكه واضحة وقواماً حريرياً.",
     stockQuantity: 30,
     lowStockThreshold: 5,
     costPriceYer: 5500,
@@ -115,7 +144,8 @@ export const products: Product[] = [
     image: beans.url,
     images: [beans.url],
     short: "فواكه مجففة وكراميل وشوكولاتة داكنة",
-    description: "محصول أوغندي غني بقوام كثيف وإيحاءات عميقة، مثالي لمشروبات الإسبريسو والحليب والترشيح.",
+    description:
+      "محصول أوغندي غني بقوام كثيف وإيحاءات عميقة، مثالي لمشروبات الإسبريسو والحليب والترشيح.",
     stockQuantity: 4,
     lowStockThreshold: 5,
     costPriceYer: 5500,
@@ -156,7 +186,8 @@ export const products: Product[] = [
     image: vacuum.url,
     images: [vacuum.url],
     short: "لتنظيف بقايا البن والغبار على طاولة الباريستا",
-    description: "مكنسة شفط يدوية عملية وسريعة لإزالة بقايا البن والغبار والمحافظة على نظافة ركن القهوة.",
+    description:
+      "مكنسة شفط يدوية عملية وسريعة لإزالة بقايا البن والغبار والمحافظة على نظافة ركن القهوة.",
     stockQuantity: 25,
     lowStockThreshold: 5,
     costPriceYer: 3800,
@@ -260,7 +291,10 @@ export const mapDbProduct = (row: any): Product => {
       variants = [];
     }
   }
-  const safeVariants = Array.isArray(variants) && variants.length > 0 ? variants : [{ label: "قطعة", yer: 9000, sar: 22 }];
+  const safeVariants =
+    Array.isArray(variants) && variants.length > 0
+      ? variants
+      : [{ label: "قطعة", yer: 9000, sar: 22 }];
 
   let images = row.images;
   if (typeof images === "string") {
@@ -287,7 +321,7 @@ export const mapDbProduct = (row: any): Product => {
     costPriceYer: row.cost_price_yer ?? 0,
     costPriceSar: row.cost_price_sar ?? 0,
     isActive: row.is_active ?? true,
-    isCoffee: row.is_coffee ?? (row.category === "coffee"),
+    isCoffee: row.is_coffee ?? row.category === "coffee",
     origin: row.origin,
     process: row.process,
     notes: Array.isArray(row.notes) ? row.notes : [],
@@ -357,7 +391,12 @@ export const searchProducts = (q: string, list: Product[] = products) => {
   const s = q.trim().toLowerCase();
   if (!s) return [];
   return list
-    .filter((p) => p.name.toLowerCase().includes(s) || p.short.toLowerCase().includes(s) || p.description.toLowerCase().includes(s))
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(s) ||
+        p.short.toLowerCase().includes(s) ||
+        p.description.toLowerCase().includes(s),
+    )
     .slice(0, 6);
 };
 

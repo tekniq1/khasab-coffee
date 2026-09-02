@@ -1,5 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Check, Copy, CreditCard, MapPin, Package, Store, Truck, UserCheck, Lock } from "lucide-react";
+import {
+  Check,
+  Copy,
+  CreditCard,
+  MapPin,
+  Package,
+  Store,
+  Truck,
+  UserCheck,
+  Lock,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -63,7 +73,8 @@ function CheckoutPage() {
   const { settings } = useLiveStoreSettings();
   const navigate = useNavigate();
 
-  const accounts = settings.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts;
+  const accounts =
+    settings.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts;
   const pickupAddress = settings.pickup_address || defaultPickupAddress;
   const whatsappNumber = settings.whatsapp_number || defaultWhatsAppNumber;
 
@@ -114,8 +125,10 @@ function CheckoutPage() {
     });
   }, []);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const copy = async (n: string) => {
     await navigator.clipboard.writeText(n);
@@ -184,10 +197,10 @@ function CheckoutPage() {
       // حساب التكلفة الإجمالية من بيانات المنتجات في قاعدة البيانات
       const costTotalYer = items.reduce((sum, i) => {
         // استخدام 60% كتكلفة افتراضية إذا لم تكن التكلفة معروفة
-        return sum + (i.price * 0.6 * i.qty);
+        return sum + i.price * 0.6 * i.qty;
       }, 0);
       const costTotalSar = items.reduce((sum, i) => {
-        return sum + (i.priceSar * 0.6 * i.qty);
+        return sum + i.priceSar * 0.6 * i.qty;
       }, 0);
 
       const orderPayload: Record<string, any> = {
@@ -227,7 +240,9 @@ function CheckoutPage() {
 
       if (error) {
         console.error("Supabase RPC error details:", error);
-        throw new Error(error.message || error.details || "تعذر إدخال بيانات الطلب أو الكمية غير متوفرة");
+        throw new Error(
+          error.message || error.details || "تعذر إدخال بيانات الطلب أو الكمية غير متوفرة",
+        );
       }
 
       // Sync customer profile in DB
@@ -255,7 +270,9 @@ function CheckoutPage() {
 
   if (orderId) {
     const cleanWaNumber = whatsappNumber.replace(/[^0-9]/g, "") || "967777000000";
-    const msg = encodeURIComponent(`مرحباً محمصة خصب، طلبي رقم ${orderId} وقد أرسلت إشعار التحويل.`);
+    const msg = encodeURIComponent(
+      `مرحباً محمصة خصب، طلبي رقم ${orderId} وقد أرسلت إشعار التحويل.`,
+    );
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <motion.div
@@ -265,13 +282,17 @@ function CheckoutPage() {
         >
           <Check className="h-10 w-10" />
         </motion.div>
-        <h1 className="mt-6 text-2xl font-extrabold text-primary sm:text-3xl">تم استلام طلبك بنجاح</h1>
+        <h1 className="mt-6 text-2xl font-extrabold text-primary sm:text-3xl">
+          تم استلام طلبك بنجاح
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           طلبك قيد التحقق من الحوالة، وسنتواصل معك فوراً لتأكيد وتجهيز طلبك.
         </p>
         <div className="mt-6 rounded-3xl border bg-card p-6 shadow-xs">
           <div className="text-xs text-muted-foreground">رقم الطلب الخاص بك</div>
-          <div className="mt-1 font-mono text-3xl font-black tracking-widest text-primary">{orderId}</div>
+          <div className="mt-1 font-mono text-3xl font-black tracking-widest text-primary">
+            {orderId}
+          </div>
           <p className="mt-3 text-xs text-muted-foreground">
             احتفظ بهذا الرقم — يمكنك متابعة حالة طلبك في أي وقت عبر صفحة "تتبع طلباتي"
           </p>
@@ -388,7 +409,13 @@ function CheckoutPage() {
           <section className="rounded-3xl border bg-card p-5">
             <h2 className="mb-4 text-base font-bold text-primary">1. بيانات العميل</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="الاسم الكامل" value={form.name} onChange={set("name")} placeholder="يا مرحباً بك.. كيف تحب أن نناديك؟" required />
+              <Field
+                label="الاسم الكامل"
+                value={form.name}
+                onChange={set("name")}
+                placeholder="يا مرحباً بك.. كيف تحب أن نناديك؟"
+                required
+              />
               <Field
                 label="رقم الهاتف للتواصل"
                 value={form.phone}
@@ -401,7 +428,9 @@ function CheckoutPage() {
           </section>
 
           <section className="rounded-3xl border bg-card p-5">
-            <h2 className="mb-4 text-base font-bold text-primary">2. خيارات الشحن والاستلام الجغرافي</h2>
+            <h2 className="mb-4 text-base font-bold text-primary">
+              2. خيارات الشحن والاستلام الجغرافي
+            </h2>
 
             {/* Region Selection */}
             <div className="mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-muted/60 p-1.5">
@@ -409,7 +438,9 @@ function CheckoutPage() {
                 type="button"
                 onClick={() => setRegion("aden")}
                 className={`rounded-xl py-2.5 text-xs font-bold transition-all ${
-                  region === "aden" ? "bg-background text-primary shadow-xs" : "text-muted-foreground"
+                  region === "aden"
+                    ? "bg-background text-primary shadow-xs"
+                    : "text-muted-foreground"
                 }`}
               >
                 داخل مدينة عدن
@@ -418,7 +449,9 @@ function CheckoutPage() {
                 type="button"
                 onClick={() => setRegion("other")}
                 className={`rounded-xl py-2.5 text-xs font-bold transition-all ${
-                  region === "other" ? "bg-background text-primary shadow-xs" : "text-muted-foreground"
+                  region === "other"
+                    ? "bg-background text-primary shadow-xs"
+                    : "text-muted-foreground"
                 }`}
               >
                 خارج مدينة عدن (بقية المحافظات)
@@ -433,13 +466,17 @@ function CheckoutPage() {
                     type="button"
                     onClick={() => setAdenMethod("home")}
                     className={`flex items-start gap-3 rounded-2xl border p-4 text-start transition-all ${
-                      adenMethod === "home" ? "border-secondary bg-secondary/10 shadow-xs" : "bg-background"
+                      adenMethod === "home"
+                        ? "border-secondary bg-secondary/10 shadow-xs"
+                        : "bg-background"
                     }`}
                   >
                     <MapPin className="h-5 w-5 shrink-0 text-secondary mt-0.5" />
                     <div>
                       <div className="text-sm font-bold text-primary">توصيل للمنزل - عدن</div>
-                      <div className="text-xs text-muted-foreground">إجباري تحديد إحداثيات الموقع (GPS)</div>
+                      <div className="text-xs text-muted-foreground">
+                        إجباري تحديد إحداثيات الموقع (GPS)
+                      </div>
                       <div className="mt-2 inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300/40">
                         التوصيل: {adenDeliveryFee}
                       </div>
@@ -450,7 +487,9 @@ function CheckoutPage() {
                     type="button"
                     onClick={() => setAdenMethod("pickup")}
                     className={`flex items-start gap-3 rounded-2xl border p-4 text-start transition-all ${
-                      adenMethod === "pickup" ? "border-secondary bg-secondary/10 shadow-xs" : "bg-background"
+                      adenMethod === "pickup"
+                        ? "border-secondary bg-secondary/10 shadow-xs"
+                        : "bg-background"
                     }`}
                   >
                     <Store className="h-5 w-5 shrink-0 text-secondary mt-0.5" />
@@ -499,7 +538,9 @@ function CheckoutPage() {
                 ) : (
                   <div className="rounded-2xl border border-secondary/30 bg-secondary/15 p-4">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-secondary">نقطة الاستلام المحجوزة لك:</div>
+                      <div className="text-xs font-bold text-secondary">
+                        نقطة الاستلام المحجوزة لك:
+                      </div>
                       <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-extrabold text-white">
                         استلام مجاني
                       </span>
@@ -517,14 +558,18 @@ function CheckoutPage() {
             {region === "other" && (
               <div className="space-y-4">
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-center justify-between">
-                  <div className="text-xs font-bold text-amber-900">رسوم شحن المحافظات التقديرية:</div>
+                  <div className="text-xs font-bold text-amber-900">
+                    رسوم شحن المحافظات التقديرية:
+                  </div>
                   <span className="rounded-full bg-amber-600 px-2.5 py-1 text-xs font-extrabold text-white">
                     {otherDeliveryFee}
                   </span>
                 </div>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-bold text-muted-foreground">اختر المحافظة</span>
+                  <span className="mb-1.5 block text-xs font-bold text-muted-foreground">
+                    اختر المحافظة
+                  </span>
                   <select
                     value={governorate}
                     onChange={(e) => setGovernorate(e.target.value)}
@@ -559,13 +604,17 @@ function CheckoutPage() {
             {/* Amount to transfer banner */}
             <div className="mb-4 rounded-2xl bg-secondary/15 border border-secondary/30 p-4 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <div className="text-xs font-bold text-secondary">المبلغ الإجمالي المطلوب تحويله:</div>
+                <div className="text-xs font-bold text-secondary">
+                  المبلغ الإجمالي المطلوب تحويله:
+                </div>
                 <div className="text-lg font-black text-primary mt-0.5">
                   {currency === "YER" ? formatPrice(total) : `${totalSar} ريال سعودي`}
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground bg-background/80 px-3 py-1.5 rounded-xl border font-bold">
-                {currency === "YER" ? `ما يعادل: ${totalSar} ر.س` : `ما يعادل: ${formatPrice(total)}`}
+                {currency === "YER"
+                  ? `ما يعادل: ${totalSar} ر.س`
+                  : `ما يعادل: ${formatPrice(total)}`}
               </div>
             </div>
 
@@ -576,15 +625,27 @@ function CheckoutPage() {
                   className="group relative flex flex-col justify-between rounded-2xl border bg-background p-4 transition-all hover:border-secondary hover:shadow-xs"
                 >
                   <div className="flex items-start gap-3">
-                    <BankLogo bankName={a.bank} logoType={a.logo_type} customLogoUrl={a.custom_logo_url} className="h-10 w-10" />
+                    <BankLogo
+                      bankName={a.bank}
+                      logoType={a.logo_type}
+                      customLogoUrl={a.custom_logo_url}
+                      className="h-10 w-10"
+                    />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-extrabold text-primary leading-tight">{a.bank}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5 truncate">{a.holder}</div>
+                      <div className="text-sm font-extrabold text-primary leading-tight">
+                        {a.bank}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {a.holder}
+                      </div>
                     </div>
                   </div>
 
                   <div className="mt-3 flex items-center justify-between gap-2 border-t pt-2.5">
-                    <span className="font-mono text-sm font-black text-primary tracking-wider" dir="ltr">
+                    <span
+                      className="font-mono text-sm font-black text-primary tracking-wider"
+                      dir="ltr"
+                    >
                       {a.number}
                     </span>
                     <button
@@ -600,8 +661,19 @@ function CheckoutPage() {
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <Field label="رقم العملية / الحوالة *" value={form.txn} onChange={set("txn")} placeholder="مثال: 88123456" required />
-              <Field label="اسم المودع / المحوّل" value={form.sender} onChange={set("sender")} placeholder="الاسم كما في الحوالة" />
+              <Field
+                label="رقم العملية / الحوالة *"
+                value={form.txn}
+                onChange={set("txn")}
+                placeholder="مثال: 88123456"
+                required
+              />
+              <Field
+                label="اسم المودع / المحوّل"
+                value={form.sender}
+                onChange={set("sender")}
+                placeholder="الاسم كما في الحوالة"
+              />
             </div>
 
             <div
@@ -614,12 +686,18 @@ function CheckoutPage() {
               className="mt-4 grid cursor-pointer place-items-center rounded-2xl border border-dashed bg-background p-6 text-center hover:border-secondary transition-colors"
             >
               {receipt ? (
-                <img src={receipt} alt="سند التحويل" className="max-h-48 rounded-xl object-contain" />
+                <img
+                  src={receipt}
+                  alt="سند التحويل"
+                  className="max-h-48 rounded-xl object-contain"
+                />
               ) : (
                 <>
                   <Truck className="mb-2 h-6 w-6 text-secondary" />
                   <div className="text-sm font-bold">ارفع صورة السند أو إشعار التحويل</div>
-                  <div className="text-xs text-muted-foreground">اسحب الصورة هنا أو اضغط للاختيار من جهازك</div>
+                  <div className="text-xs text-muted-foreground">
+                    اسحب الصورة هنا أو اضغط للاختيار من جهازك
+                  </div>
                 </>
               )}
               <input
@@ -639,10 +717,15 @@ function CheckoutPage() {
             {items.map((i) => (
               <div key={i.key} className="flex items-center justify-between gap-3 text-sm">
                 <span className="min-w-0 truncate">
-                  {i.name} <span className="text-muted-foreground">({i.options ?? ""}) ×{i.qty}</span>
+                  {i.name}{" "}
+                  <span className="text-muted-foreground">
+                    ({i.options ?? ""}) ×{i.qty}
+                  </span>
                 </span>
                 <span className="shrink-0 font-semibold">
-                  {currency === "YER" ? formatPrice(i.price * i.qty) : `${(i.priceSar * i.qty).toLocaleString()} ريال سعودي`}
+                  {currency === "YER"
+                    ? formatPrice(i.price * i.qty)
+                    : `${(i.priceSar * i.qty).toLocaleString()} ريال سعودي`}
                 </span>
               </div>
             ))}
@@ -664,7 +747,9 @@ function CheckoutPage() {
               <span className="text-muted-foreground">رسوم التوصيل:</span>
               <span
                 className={`font-bold ${
-                  region === "aden" && adenMethod === "pickup" ? "text-emerald-600" : "text-amber-800"
+                  region === "aden" && adenMethod === "pickup"
+                    ? "text-emerald-600"
+                    : "text-amber-800"
                 }`}
               >
                 {region === "aden"

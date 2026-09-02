@@ -11,7 +11,10 @@ export const Route = createFileRoute("/cart")({
   head: () => ({
     meta: [
       { title: "سلة المشتريات — محمصة خصب" },
-      { name: "description", content: "راجع منتجات سلتك وأكمل طلبك من متجر محمصة خصب للقهوة المختصة." },
+      {
+        name: "description",
+        content: "راجع منتجات سلتك وأكمل طلبك من متجر محمصة خصب للقهوة المختصة.",
+      },
     ],
   }),
   component: CartPage,
@@ -70,7 +73,9 @@ function CartPage() {
                     <div className="truncate text-xs text-muted-foreground">{i.options}</div>
                   )}
                   <div className="mt-1 text-sm font-semibold text-foreground">
-                    {currency === "YER" ? formatPrice(i.price) : `${i.priceSar.toLocaleString()} ريال سعودي`}
+                    {currency === "YER"
+                      ? formatPrice(i.price)
+                      : `${i.priceSar.toLocaleString()} ريال سعودي`}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -79,7 +84,10 @@ function CartPage() {
                       −
                     </button>
                     <span className="w-6 text-center text-sm font-bold">{i.qty}</span>
-                    <button className="px-3 py-1" onClick={() => setQty(i.key, Math.min(i.maxStock ?? 999, i.qty + 1))}>
+                    <button
+                      className="px-3 py-1"
+                      onClick={() => setQty(i.key, Math.min(i.maxStock ?? 999, i.qty + 1))}
+                    >
                       +
                     </button>
                   </div>

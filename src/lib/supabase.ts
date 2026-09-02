@@ -1,7 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const sanitize = (val?: string) => (val ? String(val).trim().replace(/^["']|["']$/g, "") : "");
+const sanitize = (val?: string) =>
+  val
+    ? String(val)
+        .trim()
+        .replace(/^["']|["']$/g, "")
+    : "";
 
 const rawUrl =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
@@ -24,7 +29,7 @@ function isNewSupabaseApiKey(value: string): boolean {
 
 const customFetch: typeof fetch = (input, init) => {
   const headers = new Headers(
-    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined
+    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
   );
 
   if (init?.headers) {
@@ -36,7 +41,10 @@ const customFetch: typeof fetch = (input, init) => {
   }
 
   // Remove invalid bearer auth when using opaque publishable key format
-  if (isNewSupabaseApiKey(supabaseAnonKey) && headers.get("Authorization") === `Bearer ${supabaseAnonKey}`) {
+  if (
+    isNewSupabaseApiKey(supabaseAnonKey) &&
+    headers.get("Authorization") === `Bearer ${supabaseAnonKey}`
+  ) {
     headers.delete("Authorization");
   }
 

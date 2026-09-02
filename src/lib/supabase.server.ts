@@ -2,7 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
 const supabaseUrl =
-  (typeof process !== "undefined" && (process.env?.SUPABASE_URL || process.env?.VITE_SUPABASE_URL)) ||
+  (typeof process !== "undefined" &&
+    (process.env?.SUPABASE_URL || process.env?.VITE_SUPABASE_URL)) ||
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
   "https://onibgpjwkqxvxrxoohrz.supabase.co";
 

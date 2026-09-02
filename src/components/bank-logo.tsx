@@ -8,14 +8,23 @@ interface BankLogoProps {
   className?: string;
 }
 
-export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w-9" }: BankLogoProps) {
+export function BankLogo({
+  bankName,
+  logoType,
+  customLogoUrl,
+  className = "h-9 w-9",
+}: BankLogoProps) {
   if (customLogoUrl) {
     return (
       <div
         className={`flex shrink-0 items-center justify-center rounded-xl bg-card border overflow-hidden shadow-xs p-1 ${className}`}
         title={bankName}
       >
-        <img src={customLogoUrl} alt={bankName} className="h-full w-full object-contain rounded-lg" />
+        <img
+          src={customLogoUrl}
+          alt={bankName}
+          className="h-full w-full object-contain rounded-lg"
+        />
       </div>
     );
   }
@@ -50,7 +59,12 @@ export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w
         <svg viewBox="0 0 40 40" className="h-full w-full" fill="none">
           <rect width="40" height="40" rx="8" fill="#0A4D3C" />
           <circle cx="20" cy="20" r="13" stroke="#D4AF37" strokeWidth="2.5" />
-          <path d="M13 20C13 16 16 13 20 13C24 13 27 16 27 20C27 24 24 27 20 27" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" />
+          <path
+            d="M13 20C13 16 16 13 20 13C24 13 27 16 27 20C27 24 24 27 20 27"
+            stroke="#D4AF37"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
           <path d="M20 20L25 25" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" />
           <circle cx="20" cy="20" r="2.5" fill="#D4AF37" />
         </svg>
@@ -59,7 +73,12 @@ export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w
   }
 
   // 3. OneCash (ون كاش)
-  if (type === "onecash" || name.includes("ون كاش") || name.includes("one cash") || name.includes("onecash")) {
+  if (
+    type === "onecash" ||
+    name.includes("ون كاش") ||
+    name.includes("one cash") ||
+    name.includes("onecash")
+  ) {
     return (
       <div
         className={`flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B2F64] to-[#061A3A] text-white shadow-xs p-1.5 ${className}`}
@@ -84,7 +103,10 @@ export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w
       >
         <svg viewBox="0 0 40 40" className="h-full w-full" fill="none">
           <rect width="40" height="40" rx="8" fill="#E30613" />
-          <path d="M12 15C12 13.5 13.5 12 15 12H25C26.5 12 28 13.5 28 15V22C28 26 25 29 20 29C15 29 12 26 12 22V15Z" fill="#FFFFFF" />
+          <path
+            d="M12 15C12 13.5 13.5 12 15 12H25C26.5 12 28 13.5 28 15V22C28 26 25 29 20 29C15 29 12 26 12 22V15Z"
+            fill="#FFFFFF"
+          />
           <path d="M16 17H24V21C24 23.2 22.2 25 20 25C17.8 25 16 23.2 16 21V17Z" fill="#E30613" />
         </svg>
       </div>
@@ -100,8 +122,18 @@ export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w
       >
         <svg viewBox="0 0 40 40" className="h-full w-full" fill="none">
           <rect width="40" height="40" rx="8" fill="#1B365D" />
-          <path d="M20 9L31 16V29C31 30.1 30.1 31 29 31H11C9.9 31 9 30.1 9 29V16L20 9Z" stroke="#D4AF37" strokeWidth="2.5" fill="none" />
-          <path d="M15 21V27M20 21V27M25 21V27" stroke="#D4AF37" strokeWidth="2" strokeLinecap="round" />
+          <path
+            d="M20 9L31 16V29C31 30.1 30.1 31 29 31H11C9.9 31 9 30.1 9 29V16L20 9Z"
+            stroke="#D4AF37"
+            strokeWidth="2.5"
+            fill="none"
+          />
+          <path
+            d="M15 21V27M20 21V27M25 21V27"
+            stroke="#D4AF37"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     );
@@ -133,7 +165,12 @@ export function BankLogo({ bankName, logoType, customLogoUrl, className = "h-9 w
         <svg viewBox="0 0 40 40" className="h-full w-full" fill="none">
           <rect width="40" height="40" rx="8" fill="#134E5E" />
           <circle cx="20" cy="20" r="12" fill="#71B280" opacity="0.85" />
-          <path d="M16 16L24 24M24 16L16 24" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+          <path
+            d="M16 16L24 24M24 16L16 24"
+            stroke="#FFFFFF"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
     );

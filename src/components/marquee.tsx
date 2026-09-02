@@ -14,7 +14,10 @@ export function Marquee() {
 
   const raw = (settings.announcement_text || "").trim();
   const messages = raw
-    ? raw.split(/[\n•|]/).map((s) => s.trim()).filter(Boolean)
+    ? raw
+        .split(/[\n•|]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : defaultMessages;
 
   const displayList = messages.length > 0 ? messages : defaultMessages;

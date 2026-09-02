@@ -17,7 +17,8 @@ export const Route = createFileRoute("/about")({
   component: AboutPage,
 });
 
-const defaultAboutText = "خصب علامة متخصصة في القهوة المختصة: نختار محاصيل استثنائية من اليمن وإثيوبيا وأوغندا وكولومبيا، ونوفر إلى جانبها آلات ومطاحن وأدوات تحضير احترافية. هدفنا أن تصل تجربتك للكوب المثالي في بيتك أو مقهاك.";
+const defaultAboutText =
+  "خصب علامة متخصصة في القهوة المختصة: نختار محاصيل استثنائية من اليمن وإثيوبيا وأوغندا وكولومبيا، ونوفر إلى جانبها آلات ومطاحن وأدوات تحضير احترافية. هدفنا أن تصل تجربتك للكوب المثالي في بيتك أو مقهاك.";
 
 const defaultCards = [
   { title: "محاصيل مختارة", desc: "تحميص طازج أسبوعياً وإيحاءات نكهة موثقة" },
@@ -28,7 +29,8 @@ const defaultCards = [
 function AboutPage() {
   const { settings } = useLiveStoreSettings();
   const aboutText = settings.about_text || defaultAboutText;
-  const cards = (settings.about_cards && settings.about_cards.length > 0) ? settings.about_cards : defaultCards;
+  const cards =
+    settings.about_cards && settings.about_cards.length > 0 ? settings.about_cards : defaultCards;
   const logoSrc = settings.logo_url || brandLogo;
   const storeName = settings.store_name || "خصب";
 

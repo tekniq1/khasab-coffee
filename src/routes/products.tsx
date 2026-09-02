@@ -87,7 +87,9 @@ function ProductsPage() {
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-secondary/15 text-secondary">
               <PackageX className="h-8 w-8" />
             </div>
-            <h2 className="mt-4 text-xl font-extrabold text-primary">لا تتوفر منتجات في هذا القسم حالياً</h2>
+            <h2 className="mt-4 text-xl font-extrabold text-primary">
+              لا تتوفر منتجات في هذا القسم حالياً
+            </h2>
             <p className="mt-2 text-xs leading-6 text-muted-foreground">
               نعمل على توفير تشكيلة جديدة وفائقة الجودة قريباً في قسم{" "}
               <span className="font-bold text-primary">

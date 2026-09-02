@@ -33,7 +33,16 @@ export type HeroBanner = {
 };
 
 export type SocialLink = {
-  platform: "instagram" | "whatsapp" | "tiktok" | "youtube" | "facebook" | "snapchat" | "twitter" | "telegram" | "other";
+  platform:
+    | "instagram"
+    | "whatsapp"
+    | "tiktok"
+    | "youtube"
+    | "facebook"
+    | "snapchat"
+    | "twitter"
+    | "telegram"
+    | "other";
   url: string;
   label?: string;
 };
@@ -67,7 +76,8 @@ export function parseStoreSettings(row: any): StoreSettings {
     return {
       store_name: defaultStoreName,
       logo_url: "",
-      announcement_text: "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
+      announcement_text:
+        "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
       announcement_enabled: true,
       whatsapp_number: defaultWhatsAppNumber,
       pickup_address: defaultPickupAddress,
@@ -95,7 +105,11 @@ export function parseStoreSettings(row: any): StoreSettings {
 
   let bankAccounts = row.bank_accounts || legacyExtra.bank_accounts;
   if (typeof bankAccounts === "string") {
-    try { bankAccounts = JSON.parse(bankAccounts); } catch { bankAccounts = defaultBankAccounts; }
+    try {
+      bankAccounts = JSON.parse(bankAccounts);
+    } catch {
+      bankAccounts = defaultBankAccounts;
+    }
   }
   if (!Array.isArray(bankAccounts) || bankAccounts.length === 0) {
     bankAccounts = defaultBankAccounts;
@@ -110,22 +124,35 @@ export function parseStoreSettings(row: any): StoreSettings {
     id: row.id,
     store_name: row.store_name || legacyExtra.store_name || defaultStoreName,
     logo_url: row.logo_url || legacyExtra.logo_url || "",
-    announcement_text: row.announcement_text ?? "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
+    announcement_text:
+      row.announcement_text ??
+      "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: row.announcement_enabled ?? true,
     whatsapp_number: row.whatsapp_number || legacyExtra.whatsapp_number || defaultWhatsAppNumber,
     pickup_address: row.pickup_address || legacyExtra.pickup_address || defaultPickupAddress,
-    aden_delivery_fee: row.aden_delivery_fee || legacyExtra.aden_delivery_fee || defaultAdenDeliveryFee,
-    aden_delivery_fee_sar: row.aden_delivery_fee_sar || legacyExtra.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
-    pickup_delivery_fee: row.pickup_delivery_fee || legacyExtra.pickup_delivery_fee || defaultPickupFee,
-    pickup_delivery_fee_sar: row.pickup_delivery_fee_sar || legacyExtra.pickup_delivery_fee_sar || defaultPickupFeeSar,
-    other_delivery_fee: row.other_delivery_fee || legacyExtra.other_delivery_fee || defaultOtherDeliveryFee,
-    other_delivery_fee_sar: row.other_delivery_fee_sar || legacyExtra.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
+    aden_delivery_fee:
+      row.aden_delivery_fee || legacyExtra.aden_delivery_fee || defaultAdenDeliveryFee,
+    aden_delivery_fee_sar:
+      row.aden_delivery_fee_sar || legacyExtra.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
+    pickup_delivery_fee:
+      row.pickup_delivery_fee || legacyExtra.pickup_delivery_fee || defaultPickupFee,
+    pickup_delivery_fee_sar:
+      row.pickup_delivery_fee_sar || legacyExtra.pickup_delivery_fee_sar || defaultPickupFeeSar,
+    other_delivery_fee:
+      row.other_delivery_fee || legacyExtra.other_delivery_fee || defaultOtherDeliveryFee,
+    other_delivery_fee_sar:
+      row.other_delivery_fee_sar ||
+      legacyExtra.other_delivery_fee_sar ||
+      defaultOtherDeliveryFeeSar,
     bank_accounts: bankAccounts,
     hero_banners: heroBanners,
     // Read from direct columns first, fall back to legacy extra
     instagram_handle: row.instagram_handle || legacyExtra.instagram_handle || "khasab",
     about_text: row.about_text || legacyExtra.about_text || "",
-    footer_text: row.footer_text || legacyExtra.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
+    footer_text:
+      row.footer_text ||
+      legacyExtra.footer_text ||
+      "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
     about_cards: row.about_cards || legacyExtra.about_cards || [],
     categories: row.categories || legacyExtra.categories || [],
     social_links: row.social_links || legacyExtra.social_links || [],
@@ -136,7 +163,8 @@ export function useLiveStoreSettings() {
   const [settings, setSettings] = useState<StoreSettings>({
     store_name: defaultStoreName,
     logo_url: "",
-    announcement_text: "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
+    announcement_text:
+      "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: true,
     whatsapp_number: defaultWhatsAppNumber,
     pickup_address: defaultPickupAddress,
@@ -148,9 +176,9 @@ export function useLiveStoreSettings() {
     other_delivery_fee_sar: defaultOtherDeliveryFeeSar,
     bank_accounts: defaultBankAccounts,
     hero_banners: [],
-    instagram_handle: 'khasab',
-    about_text: '',
-    footer_text: 'مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.',
+    instagram_handle: "khasab",
+    about_text: "",
+    footer_text: "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
     about_cards: [],
     categories: [],
     social_links: [],
@@ -185,10 +213,14 @@ export function useLiveStoreSettings() {
     const chId = `settings-live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
       .channel(chId)
-      .on("postgres_changes", { event: "*", schema: "public", table: "store_settings" }, (payload) => {
-        console.log("Store settings updated via Realtime:", payload);
-        load();
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "store_settings" },
+        (payload) => {
+          console.log("Store settings updated via Realtime:", payload);
+          load();
+        },
+      )
       .subscribe();
 
     return () => {

@@ -29,7 +29,9 @@ export function SiteHeader() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
@@ -148,7 +150,9 @@ export function SiteHeader() {
               className="inline-flex items-center gap-1 sm:gap-1.5 rounded-full border bg-card px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-primary transition-colors hover:bg-muted shrink-0"
             >
               <Globe className="h-3.5 w-3.5 text-secondary" />
-              <span className="hidden sm:inline">{currency === "YER" ? "ريال يمني (YER)" : "ريال سعودي (SAR)"}</span>
+              <span className="hidden sm:inline">
+                {currency === "YER" ? "ريال يمني (YER)" : "ريال سعودي (SAR)"}
+              </span>
               <span className="inline sm:hidden">{currency === "YER" ? "ر.ي" : "ر.س"}</span>
             </button>
 
@@ -227,7 +231,9 @@ export function SiteHeader() {
                     </div>
                     {p.variants && p.variants[0] && (
                       <div className="text-xs font-bold text-secondary shrink-0">
-                        {currency === "YER" ? `${p.variants[0].yer.toLocaleString()} ر.ي` : `${p.variants[0].sar} ر.س`}
+                        {currency === "YER"
+                          ? `${p.variants[0].yer.toLocaleString()} ر.ي`
+                          : `${p.variants[0].sar} ر.س`}
                       </div>
                     )}
                   </button>

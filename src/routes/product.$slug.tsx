@@ -16,7 +16,10 @@ export const Route = createFileRoute("/product/$slug")({
     return {
       meta: [
         { title: p ? `${p.name} — محمصة خصب` : "محمصة خصب | متجر القهوة المختصة" },
-        { name: "description", content: p ? p.short : "محصول قهوة مختصة أو أداة باريستا من محمصة خصب." },
+        {
+          name: "description",
+          content: p ? p.short : "محصول قهوة مختصة أو أداة باريستا من محمصة خصب.",
+        },
       ],
     };
   },
@@ -32,7 +35,9 @@ function ProductPage() {
   const product = liveProducts.find((p) => p.slug === slug) || findProduct(slug);
 
   const [grind, setGrind] = useState(grindOptions[0]!);
-  const [variant, setVariant] = useState(product?.variants?.[0] || { label: "قطعة", yer: 9000, sar: 22 });
+  const [variant, setVariant] = useState(
+    product?.variants?.[0] || { label: "قطعة", yer: 9000, sar: 22 },
+  );
   const [qty, setQty] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>("");
@@ -48,7 +53,9 @@ function ProductPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <h1 className="text-2xl font-black text-primary">المنتج غير موجود</h1>
-        <p className="mt-2 text-sm text-muted-foreground">عذراً، لم نتمكن من العثور على هذا المنتج أو ربما تم حذفه.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          عذراً، لم نتمكن من العثور على هذا المنتج أو ربما تم حذفه.
+        </p>
         <Link
           to="/products"
           search={{}}
@@ -62,7 +69,9 @@ function ProductPage() {
 
   const allImages = product.images && product.images.length > 0 ? product.images : [product.image];
   const currentImg = selectedImage || product.image || allImages[0] || "";
-  const related = (liveProducts || products).filter((p) => p.category === product.category && p.slug !== product.slug);
+  const related = (liveProducts || products).filter(
+    (p) => p.category === product.category && p.slug !== product.slug,
+  );
 
   const onAdd = () => {
     add({
@@ -100,10 +109,16 @@ function ProductPage() {
                   key={idx}
                   onClick={() => setSelectedImage(img)}
                   className={`h-16 w-16 shrink-0 rounded-2xl overflow-hidden border-2 transition-all ${
-                    currentImg === img ? "border-primary scale-105 shadow-md" : "border-transparent opacity-70 hover:opacity-100"
+                    currentImg === img
+                      ? "border-primary scale-105 shadow-md"
+                      : "border-transparent opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <img src={img} alt={`${product.name} - ${idx + 1}`} className="h-full w-full object-cover" />
+                  <img
+                    src={img}
+                    alt={`${product.name} - ${idx + 1}`}
+                    className="h-full w-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -112,7 +127,9 @@ function ProductPage() {
 
         <div>
           <h1 className="text-2xl font-extrabold text-primary sm:text-3xl">{product.name}</h1>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">{product.description || product.short}</p>
+          <p className="mt-2 text-sm leading-7 text-muted-foreground">
+            {product.description || product.short}
+          </p>
           <div className="mt-4 text-2xl font-extrabold">{price(variant)}</div>
 
           <div className="mt-6 space-y-5">
@@ -137,7 +154,9 @@ function ProductPage() {
 
             {product.variants && product.variants.length > 1 && (
               <div>
-                <div className="mb-2 text-sm font-bold">{product.isCoffee ? "الوزن / الحجم" : "الخيار"}</div>
+                <div className="mb-2 text-sm font-bold">
+                  {product.isCoffee ? "الوزن / الحجم" : "الخيار"}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((v) => {
                     const vStock = v.stock !== undefined ? v.stock : (product.stockQuantity ?? 50);
@@ -155,8 +174,8 @@ function ProductPage() {
                           vOutOfStock
                             ? "cursor-not-allowed border-muted bg-muted text-muted-foreground opacity-60"
                             : variant.label === v.label
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-card hover:border-primary"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "bg-card hover:border-primary"
                         }`}
                       >
                         {v.label} ({price(v)})
@@ -220,21 +239,22 @@ function ProductPage() {
 
           <div className="mt-8 flex items-center gap-3">
             {(() => {
-              const currentStock = variant.stock !== undefined ? variant.stock : (product.stockQuantity ?? 50);
+              const currentStock =
+                variant.stock !== undefined ? variant.stock : (product.stockQuantity ?? 50);
               const isOutOfStock = currentStock <= 0;
               return (
                 <>
                   <div className="flex items-center rounded-full border bg-card">
-                    <button 
-                      className="px-4 py-2 text-lg disabled:opacity-50" 
+                    <button
+                      className="px-4 py-2 text-lg disabled:opacity-50"
                       onClick={() => setQty((q) => Math.max(1, q - 1))}
                       disabled={isOutOfStock}
                     >
                       −
                     </button>
                     <span className="w-8 text-center text-sm font-bold">{qty}</span>
-                    <button 
-                      className="px-4 py-2 text-lg disabled:opacity-50" 
+                    <button
+                      className="px-4 py-2 text-lg disabled:opacity-50"
                       onClick={() => setQty((q) => Math.min(currentStock, q + 1))}
                       disabled={isOutOfStock || qty >= currentStock}
                     >

@@ -28,7 +28,8 @@ export function SiteFooter() {
             </div>
           </div>
           <p className="mt-4 max-w-xs text-sm leading-7 opacity-75">
-            {settings.footer_text || "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك."}
+            {settings.footer_text ||
+              "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك."}
           </p>
         </div>
 
@@ -71,12 +72,19 @@ export function SiteFooter() {
                 else if (link.platform === "youtube") Icon = Youtube;
                 else if (link.platform === "facebook") Icon = Facebook;
                 else if (link.platform === "twitter") Icon = Twitter;
-                
+
                 return (
                   <li key={idx} className="flex items-center gap-2">
                     <Icon className="h-4 w-4 shrink-0" />
-                    <a href={link.url} target="_blank" rel="noreferrer" className="hover:text-secondary">
-                      {link.platform === "instagram" ? (link.label || `@${link.url.split('/').pop()?.split('?')[0]}`) : (link.label || link.platform)}
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-secondary"
+                    >
+                      {link.platform === "instagram"
+                        ? link.label || `@${link.url.split("/").pop()?.split("?")[0]}`
+                        : link.label || link.platform}
                     </a>
                   </li>
                 );
@@ -87,12 +95,12 @@ export function SiteFooter() {
                   <li className="flex items-center gap-2">
                     <Instagram className="h-4 w-4 shrink-0" />
                     <a
-                      href={`https://instagram.com/${settings.instagram_handle.replace('@', '')}`}
+                      href={`https://instagram.com/${settings.instagram_handle.replace("@", "")}`}
                       target="_blank"
                       rel="noreferrer"
                       className="hover:text-secondary"
                     >
-                      @{settings.instagram_handle.replace('@', '')}
+                      @{settings.instagram_handle.replace("@", "")}
                     </a>
                   </li>
                 ) : (

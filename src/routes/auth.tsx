@@ -92,7 +92,10 @@ function AuthPage() {
               phone: cleanPhone,
               role: "customer",
             },
-            emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}${redirect || "/"}` : undefined,
+            emailRedirectTo:
+              typeof window !== "undefined"
+                ? `${window.location.origin}${redirect || "/"}`
+                : undefined,
           },
         });
         if (error) throw error;
@@ -147,17 +150,15 @@ function AuthPage() {
           {redirect
             ? "سجّل دخولك لنكمل معاً تجهيز طلبك ونوصل عبق قهوتك إلى باب منزلك"
             : mode === "signin"
-            ? "طاب يومك.. سجّل دخولك لتستمتع بأعذب نكهات القهوة المختصة وتتابع سلتك"
-            : "يسعدنا انضمامك إلى عائلة عشاق البن الأصيل لنشاركك شغف وتفاصيل الكوب المثالي"}
+              ? "طاب يومك.. سجّل دخولك لتستمتع بأعذب نكهات القهوة المختصة وتتابع سلتك"
+              : "يسعدنا انضمامك إلى عائلة عشاق البن الأصيل لنشاركك شغف وتفاصيل الكوب المثالي"}
         </p>
 
         <form onSubmit={submit} className="mt-6 space-y-4">
           {mode === "signup" && (
             <>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-primary">
-                  الاسم الكريم *
-                </span>
+                <span className="mb-1.5 block text-xs font-bold text-primary">الاسم الكريم *</span>
                 <input
                   type="text"
                   required
@@ -184,9 +185,7 @@ function AuthPage() {
           )}
 
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-primary">
-              البريد الإلكتروني *
-            </span>
+            <span className="mb-1.5 block text-xs font-bold text-primary">البريد الإلكتروني *</span>
             <input
               type="email"
               required

@@ -30,7 +30,8 @@ function Index() {
   const [activeBanner, setActiveBanner] = useState(0);
   const { products: liveProducts } = useLiveProducts();
   const { settings } = useLiveStoreSettings();
-  const liveBanners = (settings.hero_banners && settings.hero_banners.length > 0) ? settings.hero_banners : heroBanners;
+  const liveBanners =
+    settings.hero_banners && settings.hero_banners.length > 0 ? settings.hero_banners : heroBanners;
 
   // Auto slide hero banners
   useEffect(() => {
@@ -107,7 +108,9 @@ function Index() {
           {/* Slider controls */}
           <div className="absolute bottom-6 start-4 z-20 flex items-center gap-2 sm:start-8">
             <button
-              onClick={() => setActiveBanner((prev) => (prev - 1 + liveBanners.length) % liveBanners.length)}
+              onClick={() =>
+                setActiveBanner((prev) => (prev - 1 + liveBanners.length) % liveBanners.length)
+              }
               className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white backdrop-blur-xs transition-colors hover:bg-white/20"
               title="السابق"
             >
@@ -166,10 +169,18 @@ function Index() {
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-secondary uppercase tracking-wider">مختارات خصب المميزة</span>
-            <h2 className="text-2xl font-extrabold text-primary sm:text-3xl">المنتجات الأكثر مبيعاً</h2>
+            <span className="text-xs font-bold text-secondary uppercase tracking-wider">
+              مختارات خصب المميزة
+            </span>
+            <h2 className="text-2xl font-extrabold text-primary sm:text-3xl">
+              المنتجات الأكثر مبيعاً
+            </h2>
           </div>
-          <Link to="/products" search={{}} className="text-sm font-bold text-secondary hover:underline">
+          <Link
+            to="/products"
+            search={{}}
+            className="text-sm font-bold text-secondary hover:underline"
+          >
             عرض كل المنتجات
           </Link>
         </div>
@@ -188,7 +199,9 @@ function Index() {
           style={{ background: "var(--gradient-deep)" }}
         >
           <div className="relative z-10">
-            <h2 className="text-2xl font-extrabold sm:text-4xl text-white">جاهز ترفع مستوى كوب القهوة؟</h2>
+            <h2 className="text-2xl font-extrabold sm:text-4xl text-white">
+              جاهز ترفع مستوى كوب القهوة؟
+            </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-primary-foreground/80 leading-7">
               اختر محصولك المفضل وعدّتك الاحترافية من محمصة خصب، وخلّ الباقي علينا.
             </p>

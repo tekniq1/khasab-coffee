@@ -39,9 +39,7 @@ export function AddToCartModal({ isOpen, onClose, product }: AddToCartModalProps
   };
 
   const displayPrice =
-    currency === "YER"
-      ? formatPrice(product.priceYer)
-      : `${product.priceSar} ريال سعودي`;
+    currency === "YER" ? formatPrice(product.priceYer) : `${product.priceSar} ريال سعودي`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
@@ -51,7 +49,9 @@ export function AddToCartModal({ isOpen, onClose, product }: AddToCartModalProps
         </div>
 
         <h2 className="mt-4 text-xl font-extrabold text-primary">تمت الإضافة إلى السلة بنجاح</h2>
-        <p className="mt-1 text-xs text-muted-foreground">اختر الخطوة التالية لمتابعة تجربة التسوق</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          اختر الخطوة التالية لمتابعة تجربة التسوق
+        </p>
 
         <div className="mt-5 flex items-center gap-4 rounded-2xl border bg-muted/40 p-3 text-start">
           <img
