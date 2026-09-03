@@ -120,42 +120,56 @@ export function parseStoreSettings(row: any): StoreSettings {
     ? (row.hero_banners as any[]).filter((b) => b && typeof b === "object" && b.image)
     : [];
 
+  // Parse social_links safely
+  let socialLinks: SocialLink[] = [];
+  if (Array.isArray(row.social_links)) {
+    socialLinks = row.social_links;
+  } else if (typeof row.social_links === "string") {
+    try {
+      socialLinks = JSON.parse(row.social_links);
+    } catch {
+      socialLinks = [];
+    }
+  } else if (Array.isArray(legacyExtra.social_links)) {
+    socialLinks = legacyExtra.social_links;
+  }
+
   return {
     id: row.id,
-    store_name: row.store_name || legacyExtra.store_name || defaultStoreName,
-    logo_url: row.logo_url || legacyExtra.logo_url || "",
+    // Use nullish coalescing (??) for all string fields so empty string "" is preserved correctly
+    store_name: row.store_name ?? legacyExtra.store_name ?? defaultStoreName,
+    logo_url: row.logo_url ?? legacyExtra.logo_url ?? "",
     announcement_text:
       row.announcement_text ??
       "توصيل مجاني عند الطلب بـ +100 ريال، تحميص أسبوعي، أجود أنواع القهوة المختصة",
     announcement_enabled: row.announcement_enabled ?? true,
-    whatsapp_number: row.whatsapp_number || legacyExtra.whatsapp_number || defaultWhatsAppNumber,
-    pickup_address: row.pickup_address || legacyExtra.pickup_address || defaultPickupAddress,
+    whatsapp_number: row.whatsapp_number ?? legacyExtra.whatsapp_number ?? defaultWhatsAppNumber,
+    pickup_address: row.pickup_address ?? legacyExtra.pickup_address ?? defaultPickupAddress,
     aden_delivery_fee:
-      row.aden_delivery_fee || legacyExtra.aden_delivery_fee || defaultAdenDeliveryFee,
+      row.aden_delivery_fee ?? legacyExtra.aden_delivery_fee ?? defaultAdenDeliveryFee,
     aden_delivery_fee_sar:
-      row.aden_delivery_fee_sar || legacyExtra.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
+      row.aden_delivery_fee_sar ?? legacyExtra.aden_delivery_fee_sar ?? defaultAdenDeliveryFeeSar,
     pickup_delivery_fee:
-      row.pickup_delivery_fee || legacyExtra.pickup_delivery_fee || defaultPickupFee,
+      row.pickup_delivery_fee ?? legacyExtra.pickup_delivery_fee ?? defaultPickupFee,
     pickup_delivery_fee_sar:
-      row.pickup_delivery_fee_sar || legacyExtra.pickup_delivery_fee_sar || defaultPickupFeeSar,
+      row.pickup_delivery_fee_sar ?? legacyExtra.pickup_delivery_fee_sar ?? defaultPickupFeeSar,
     other_delivery_fee:
-      row.other_delivery_fee || legacyExtra.other_delivery_fee || defaultOtherDeliveryFee,
+      row.other_delivery_fee ?? legacyExtra.other_delivery_fee ?? defaultOtherDeliveryFee,
     other_delivery_fee_sar:
-      row.other_delivery_fee_sar ||
-      legacyExtra.other_delivery_fee_sar ||
+      row.other_delivery_fee_sar ??
+      legacyExtra.other_delivery_fee_sar ??
       defaultOtherDeliveryFeeSar,
     bank_accounts: bankAccounts,
     hero_banners: heroBanners,
-    // Read from direct columns first, fall back to legacy extra
-    instagram_handle: row.instagram_handle || legacyExtra.instagram_handle || "khasab",
-    about_text: row.about_text || legacyExtra.about_text || "",
+    instagram_handle: row.instagram_handle ?? legacyExtra.instagram_handle ?? "khasab",
+    about_text: row.about_text ?? legacyExtra.about_text ?? "",
     footer_text:
-      row.footer_text ||
-      legacyExtra.footer_text ||
+      row.footer_text ??
+      legacyExtra.footer_text ??
       "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
     about_cards: row.about_cards || legacyExtra.about_cards || [],
     categories: row.categories || legacyExtra.categories || [],
-    social_links: row.social_links || legacyExtra.social_links || [],
+    social_links: socialLinks,
   };
 }
 

@@ -837,7 +837,8 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         category: form.category,
         short: form.short,
         description: form.description,
-        stock_quantity: finalVariants.reduce((sum, v) => sum + (v.stock || 0), 0),
+        // Fix: use ?? 0 (nullish coalescing) NOT || 0 so stock=0 is preserved correctly
+        stock_quantity: finalVariants.reduce((sum, v) => sum + (v.stock ?? 0), 0),
         low_stock_threshold: form.lowStockThreshold,
         cost_price_yer: form.costPriceYer,
         cost_price_sar: form.costPriceSar,
@@ -2211,55 +2212,85 @@ function StoreSettingsModule({
   settings: StoreSettings;
   refetch: () => void;
 }) {
-  const [storeName, setStoreName] = useState(settings?.store_name || defaultStoreName);
-  const [logoUrl, setLogoUrl] = useState(settings?.logo_url || "");
-  const [announcementText, setAnnouncementText] = useState(settings?.announcement_text || "");
+  const [storeName, setStoreName] = useState(settings?.store_name ?? defaultStoreName);
+  const [logoUrl, setLogoUrl] = useState(settings?.logo_url ?? "");
+  const [announcementText, setAnnouncementText] = useState(settings?.announcement_text ?? "");
   const [enabled, setEnabled] = useState(settings?.announcement_enabled ?? true);
   const [whatsappNumber, setWhatsappNumber] = useState(
-    settings?.whatsapp_number || defaultWhatsAppNumber,
+    settings?.whatsapp_number ?? defaultWhatsAppNumber,
   );
   const [pickupAddress, setPickupAddress] = useState(
-    settings?.pickup_address || defaultPickupAddress,
+    settings?.pickup_address ?? defaultPickupAddress,
   );
   const [adenDeliveryFee, setAdenDeliveryFee] = useState(
-    settings?.aden_delivery_fee || defaultAdenDeliveryFee,
+    settings?.aden_delivery_fee ?? defaultAdenDeliveryFee,
   );
   const [adenDeliveryFeeSar, setAdenDeliveryFeeSar] = useState(
-    settings?.aden_delivery_fee_sar || defaultAdenDeliveryFeeSar,
+    settings?.aden_delivery_fee_sar ?? defaultAdenDeliveryFeeSar,
   );
   const [pickupDeliveryFee, setPickupDeliveryFee] = useState(
-    settings?.pickup_delivery_fee || defaultPickupFee,
+    settings?.pickup_delivery_fee ?? defaultPickupFee,
   );
   const [pickupDeliveryFeeSar, setPickupDeliveryFeeSar] = useState(
-    settings?.pickup_delivery_fee_sar || defaultPickupFeeSar,
+    settings?.pickup_delivery_fee_sar ?? defaultPickupFeeSar,
   );
   const [otherDeliveryFee, setOtherDeliveryFee] = useState(
-    settings?.other_delivery_fee || defaultOtherDeliveryFee,
+    settings?.other_delivery_fee ?? defaultOtherDeliveryFee,
   );
   const [otherDeliveryFeeSar, setOtherDeliveryFeeSar] = useState(
-    settings?.other_delivery_fee_sar || defaultOtherDeliveryFeeSar,
+    settings?.other_delivery_fee_sar ?? defaultOtherDeliveryFeeSar,
   );
   const [accounts, setAccounts] = useState<BankAccount[]>(
     settings?.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts,
   );
-  // Hero Banners state
+  // Hero Banners state — FIX: was hero_banners_list (wrong), now hero_banners (correct)
   const [heroBannersEdit, setHeroBannersEdit] = useState<
     { image: string; title: string; desc: string }[]
-  >((settings as any)?.hero_banners_list || []);
+  >(Array.isArray(settings?.hero_banners) ? settings.hero_banners : []);
   const [newBanner, setNewBanner] = useState({ image: "", title: "", desc: "" });
+  const [uploadingBannerIdx, setUploadingBannerIdx] = useState<number | null>(null);
+  const [uploadingNewBanner, setUploadingNewBanner] = useState(false);
   // About & Footer settings
   const [instagramHandle, setInstagramHandle] = useState(
-    (settings as any)?.instagram_handle || "khasab",
+    settings?.instagram_handle ?? "khasab",
   );
-  const [aboutText, setAboutText] = useState((settings as any)?.about_text || "");
+  const [aboutText, setAboutText] = useState(settings?.about_text ?? "");
   const [footerText, setFooterText] = useState(
-    (settings as any)?.footer_text ||
+    settings?.footer_text ??
       "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
   );
   const [socialLinks, setSocialLinks] = useState<any[]>(settings?.social_links || []);
   const [saving, setSaving] = useState(false);
   const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
   const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
+
+  // Sync all state when settings are loaded/refreshed from DB
+  // This runs whenever the parent refetches and passes new settings
+  useEffect(() => {
+    if (!settings?.id) return; // don't sync if settings not loaded yet
+    setStoreName(settings.store_name ?? defaultStoreName);
+    setLogoUrl(settings.logo_url ?? "");
+    setAnnouncementText(settings.announcement_text ?? "");
+    setEnabled(settings.announcement_enabled ?? true);
+    setWhatsappNumber(settings.whatsapp_number ?? defaultWhatsAppNumber);
+    setPickupAddress(settings.pickup_address ?? defaultPickupAddress);
+    setAdenDeliveryFee(settings.aden_delivery_fee ?? defaultAdenDeliveryFee);
+    setAdenDeliveryFeeSar(settings.aden_delivery_fee_sar ?? defaultAdenDeliveryFeeSar);
+    setPickupDeliveryFee(settings.pickup_delivery_fee ?? defaultPickupFee);
+    setPickupDeliveryFeeSar(settings.pickup_delivery_fee_sar ?? defaultPickupFeeSar);
+    setOtherDeliveryFee(settings.other_delivery_fee ?? defaultOtherDeliveryFee);
+    setOtherDeliveryFeeSar(settings.other_delivery_fee_sar ?? defaultOtherDeliveryFeeSar);
+    setAccounts(settings.bank_accounts?.length > 0 ? settings.bank_accounts : defaultBankAccounts);
+    setHeroBannersEdit(Array.isArray(settings.hero_banners) ? settings.hero_banners : []);
+    setInstagramHandle(settings.instagram_handle ?? "khasab");
+    setAboutText(settings.about_text ?? "");
+    setFooterText(
+      settings.footer_text ??
+        "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
+    );
+    setSocialLinks(settings.social_links || []);
+  }, [settings?.id]);
+
 
   // Handle Brand Logo Upload
   const handleBrandLogoUpload = async (file: File) => {
@@ -2345,6 +2376,54 @@ function StoreSettingsModule({
       return;
     }
     setAccounts(accounts.filter((_, i) => i !== index));
+  };
+
+  // Upload banner image for existing banner (by index)
+  const handleBannerImageUpload = async (idx: number, file: File) => {
+    try {
+      setUploadingBannerIdx(idx);
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `banners/banner-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file, { cacheControl: "3600", upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      if (publicUrlData?.publicUrl) {
+        const updated = [...heroBannersEdit];
+        updated[idx] = { ...updated[idx]!, image: publicUrlData.publicUrl };
+        setHeroBannersEdit(updated);
+        toast.success("تم رفع صورة البانر بنجاح");
+      }
+    } catch (err: any) {
+      console.error("Upload banner error:", err);
+      toast.error("تعذر رفع صورة البانر: " + (err?.message || ""));
+    } finally {
+      setUploadingBannerIdx(null);
+    }
+  };
+
+  // Upload image for the new banner form
+  const handleNewBannerImageUpload = async (file: File) => {
+    try {
+      setUploadingNewBanner(true);
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `banners/banner-new-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(filePath, file, { cacheControl: "3600", upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+      if (publicUrlData?.publicUrl) {
+        setNewBanner((prev) => ({ ...prev, image: publicUrlData.publicUrl }));
+        toast.success("تم رفع صورة البانر الجديد");
+      }
+    } catch (err: any) {
+      console.error("Upload new banner error:", err);
+      toast.error("تعذر رفع الصورة: " + (err?.message || ""));
+    } finally {
+      setUploadingNewBanner(false);
+    }
   };
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -2563,6 +2642,11 @@ function StoreSettingsModule({
 
           {/* Existing Banners List */}
           <div className="space-y-3">
+            {heroBannersEdit.length === 0 && (
+              <p className="text-center text-xs text-muted-foreground py-4 border rounded-2xl bg-muted/30">
+                لا توجد بانرات حالياً — أضف بانراً جديداً من النموذج أدناه
+              </p>
+            )}
             {heroBannersEdit.map((b, idx) => (
               <div key={idx} className="rounded-2xl border bg-background p-4 space-y-2">
                 <div className="flex items-center justify-between">
@@ -2571,22 +2655,40 @@ function StoreSettingsModule({
                     type="button"
                     onClick={() => setHeroBannersEdit(heroBannersEdit.filter((_, i) => i !== idx))}
                     className="p-1 rounded-lg text-destructive hover:bg-destructive/10"
+                    title="حذف البانر"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <div className="grid gap-2">
-                  <input
-                    type="url"
-                    value={b.image}
-                    onChange={(e) => {
-                      const updated = [...heroBannersEdit];
-                      updated[idx] = { ...updated[idx]!, image: e.target.value };
-                      setHeroBannersEdit(updated);
-                    }}
-                    placeholder="رابط الصورة (URL)..."
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  {/* Image: URL input + upload button */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={b.image}
+                      onChange={(e) => {
+                        const updated = [...heroBannersEdit];
+                        updated[idx] = { ...updated[idx]!, image: e.target.value };
+                        setHeroBannersEdit(updated);
+                      }}
+                      placeholder="رابط الصورة (URL)..."
+                      className="flex-1 rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <label className="inline-flex items-center gap-1 rounded-xl border bg-card px-2.5 py-1.5 text-xs font-bold text-primary cursor-pointer hover:bg-muted transition-colors shrink-0">
+                      <Upload className="h-3 w-3 text-secondary" />
+                      <span>{uploadingBannerIdx === idx ? "جارِ الرفع…" : "رفع صورة"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingBannerIdx === idx}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleBannerImageUpload(idx, file);
+                        }}
+                      />
+                    </label>
+                  </div>
                   <input
                     type="text"
                     value={b.title}
@@ -2614,7 +2716,7 @@ function StoreSettingsModule({
                   <img
                     src={b.image}
                     alt="معاينة"
-                    className="h-20 w-full object-cover rounded-xl"
+                    className="h-24 w-full object-cover rounded-xl"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
@@ -2627,13 +2729,38 @@ function StoreSettingsModule({
           {/* Add New Banner */}
           <div className="rounded-2xl border border-dashed border-secondary/40 p-4 space-y-2">
             <span className="text-xs font-bold text-secondary block">+ إضافة بانر جديد</span>
-            <input
-              type="url"
-              value={newBanner.image}
-              onChange={(e) => setNewBanner({ ...newBanner, image: e.target.value })}
-              placeholder="رابط الصورة..."
-              className="w-full rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-            />
+            {/* Image: URL or upload */}
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={newBanner.image}
+                onChange={(e) => setNewBanner({ ...newBanner, image: e.target.value })}
+                placeholder="رابط الصورة (URL) أو ارفع من الجهاز..."
+                className="flex-1 rounded-xl border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+              />
+              <label className="inline-flex items-center gap-1 rounded-xl border bg-background px-2.5 py-1.5 text-xs font-bold text-primary cursor-pointer hover:bg-muted transition-colors shrink-0">
+                <Upload className="h-3 w-3 text-secondary" />
+                <span>{uploadingNewBanner ? "جارِ الرفع…" : "رفع صورة"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingNewBanner}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleNewBannerImageUpload(file);
+                  }}
+                />
+              </label>
+            </div>
+            {newBanner.image && (
+              <img
+                src={newBanner.image}
+                alt="معاينة البانر الجديد"
+                className="h-20 w-full object-cover rounded-xl"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            )}
             <input
               type="text"
               value={newBanner.title}
@@ -2651,17 +2778,19 @@ function StoreSettingsModule({
             <button
               type="button"
               onClick={() => {
-                if (!newBanner.title) return toast.error("أدخل عنوان البانر");
-                setHeroBannersEdit([...heroBannersEdit, newBanner]);
+                if (!newBanner.title.trim()) return toast.error("أدخل عنوان البانر أولاً");
+                if (!newBanner.image.trim()) return toast.error("أدخل رابط الصورة أو ارفع صورة للبانر");
+                setHeroBannersEdit([...heroBannersEdit, { ...newBanner }]);
                 setNewBanner({ image: "", title: "", desc: "" });
-                toast.success("تمت إضافة البانر");
+                toast.success("تمت إضافة البانر — لا تنس الضغط على حفظ التغييرات");
               }}
               className="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-4 py-2 text-xs font-bold text-secondary hover:bg-secondary/25"
             >
-              <Plus className="h-3.5 w-3.5" /> إضافة بانر
+              <Plus className="h-3.5 w-3.5" /> إضافة بانر للقائمة
             </button>
           </div>
         </div>
+
 
         {/* Section 1.6: About Page & Instagram */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
