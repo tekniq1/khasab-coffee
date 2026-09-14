@@ -137,7 +137,6 @@ function AuthPage() {
     }
   };
 
-  return (
   const [showPassword, setShowPassword] = useState(false);
 
   return (
