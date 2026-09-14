@@ -249,7 +249,7 @@ function AuthPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0066cc] px-6 py-4 text-sm font-bold text-white shadow-md disabled:opacity-60 hover:bg-[#0055aa] transition-colors"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-bold text-primary-foreground shadow-md disabled:opacity-60 hover:bg-primary/90 transition-colors"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -265,7 +265,7 @@ function AuthPage() {
           <div className="mt-4 text-left">
             <button
               onClick={() => toast.info("سيتم إضافة خاصية استعادة كلمة المرور قريباً")}
-              className="text-xs font-bold text-[#0066cc] hover:underline"
+              className="text-xs font-bold text-secondary hover:underline"
             >
               نسيت كلمة المرور؟
             </button>
@@ -281,7 +281,7 @@ function AuthPage() {
 
         <button
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="w-full rounded-2xl bg-blue-50/50 px-6 py-4 text-sm font-bold text-[#0066cc] hover:bg-blue-50 transition-colors border border-blue-100"
+          className="w-full rounded-2xl bg-primary/5 px-6 py-4 text-sm font-bold text-primary hover:bg-primary/10 transition-colors border border-primary/20"
         >
           {mode === "signin" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
         </button>
