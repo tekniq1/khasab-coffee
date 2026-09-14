@@ -69,44 +69,48 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
     const cleanName = fullName.trim();
-    const cleanPhone = phone.trim();
+    // Sanitize phone to only digits for the virtual email
+    const sanitizedPhone = phone.replace(/\D/g, "");
+    
+    // For login, the 'email' state holds either phone or email
+    const identifier = email.trim().toLowerCase(); 
 
-    if (!cleanEmail || !cleanPassword) {
-      toast.error("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+    if (mode === "signin" && (!identifier || !cleanPassword)) {
+      toast.error("يرجى إدخال رقم الهاتف أو البريد وكلمة المرور");
+      return;
+    }
+    if (mode === "signup" && (!sanitizedPhone || !cleanPassword || !cleanName)) {
+      toast.error("يرجى إكمال البيانات الإلزامية (الاسم، رقم الهاتف، وكلمة المرور)");
       return;
     }
 
     setLoading(true);
     try {
       if (mode === "signup") {
-        // Only customer accounts can be created via public sign up
+        const virtualEmail = `${sanitizedPhone}@khasab.coffee`;
+        
         const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
+          email: virtualEmail,
           password: cleanPassword,
           options: {
             data: {
               full_name: cleanName,
-              phone: cleanPhone,
+              phone: sanitizedPhone,
+              real_email: email.trim(), // Optional real email
               role: "customer",
             },
-            emailRedirectTo:
-              typeof window !== "undefined"
-                ? `${window.location.origin}${redirect || "/"}`
-                : undefined,
           },
         });
         if (error) throw error;
 
-        // Upsert into public.profiles
         if (data.user) {
           try {
             await supabase.from("profiles").upsert({
               id: data.user.id,
               full_name: cleanName,
-              phone: cleanPhone,
+              phone: sanitizedPhone,
               updated_at: new Date().toISOString(),
             });
           } catch {
@@ -114,15 +118,22 @@ function AuthPage() {
           }
         }
 
-        toast.success("تم إنشاء حساب العميل بنجاح");
+        toast.success("تم إنشاء حسابك بنجاح!");
         if (data.session) {
           await checkUserRoleAndNavigate(data.user);
         } else {
-          toast.info("يرجى تفقّد بريدك الإلكتروني لتأكيد التسجيل");
+          // Fallback if email confirmation was required (should be disabled for this trick)
+          await checkUserRoleAndNavigate(data.user);
         }
       } else {
+        // SIGN IN
+        // Check if user entered an email (contains @) or a phone number
+        const authEmail = identifier.includes("@") 
+          ? identifier 
+          : `${identifier.replace(/\D/g, "")}@khasab.coffee`;
+
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
+          email: authEmail,
           password: cleanPassword,
         });
         if (error) throw error;
@@ -131,7 +142,13 @@ function AuthPage() {
       }
     } catch (err: any) {
       console.error("Auth submit error:", err);
-      toast.error(err?.message || "تعذر إتمام العملية");
+      if (err?.message?.includes("Invalid login credentials")) {
+        toast.error("رقم الهاتف أو كلمة المرور غير صحيحة");
+      } else if (err?.message?.includes("already registered")) {
+        toast.error("رقم الهاتف مسجل مسبقاً! يرجى تسجيل الدخول");
+      } else {
+        toast.error(err?.message || "تعذر إتمام العملية");
+      }
     } finally {
       setLoading(false);
     }
@@ -142,7 +159,6 @@ function AuthPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-16">
       <div className="relative rounded-[2rem] border bg-card p-6 shadow-xl sm:p-8">
-        {/* Close Button / Go to Home */}
         <button
           onClick={() => navigate({ to: "/" })}
           className="absolute left-6 top-6 flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 text-muted-foreground hover:bg-muted transition-colors"
@@ -152,7 +168,6 @@ function AuthPage() {
 
         <h1 className="text-center text-xl font-extrabold text-primary mb-6">الحساب</h1>
 
-        {/* Segmented Tabs */}
         <div className="mb-8 flex rounded-xl bg-muted/30 p-1">
           <button
             onClick={() => setMode("signup")}
@@ -176,7 +191,7 @@ function AuthPage() {
           {mode === "signup" && (
             <>
               <label className="block space-y-1.5">
-                <span className="text-sm font-bold text-primary">الاسم</span>
+                <span className="text-sm font-bold text-primary">الاسم *</span>
                 <input
                   type="text"
                   required
@@ -187,7 +202,7 @@ function AuthPage() {
                 />
               </label>
               <label className="block space-y-1.5">
-                <span className="text-sm font-bold text-primary">رقم الهاتف</span>
+                <span className="text-sm font-bold text-primary">رقم الهاتف *</span>
                 <div className="flex rounded-2xl border bg-background focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all overflow-hidden">
                   <div className="flex items-center justify-center bg-muted/20 px-3 border-l text-lg">
                     🇾🇪
@@ -207,20 +222,22 @@ function AuthPage() {
           )}
 
           <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-primary">البريد الإلكتروني</span>
+            <span className="text-sm font-bold text-primary">
+              {mode === "signin" ? "رقم الهاتف أو البريد الإلكتروني *" : "البريد الإلكتروني (اختياري)"}
+            </span>
             <input
-              type="email"
-              required
+              type={mode === "signin" ? "text" : "email"}
+              required={mode === "signin"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               dir="ltr"
               className="w-full rounded-2xl border bg-background px-4 py-3.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60 text-right transition-all"
-              placeholder="name@example.com"
+              placeholder={mode === "signin" ? "7XXXXXXXX" : "name@example.com"}
             />
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-sm font-bold text-primary">كلمة المرور</span>
+            <span className="text-sm font-bold text-primary">كلمة المرور *</span>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
