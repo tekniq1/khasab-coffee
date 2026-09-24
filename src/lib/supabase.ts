@@ -1,24 +1,27 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-const sanitize = (val?: string) =>
-  val
-    ? String(val)
-        .trim()
-        .replace(/^["']|["']$/g, "")
-    : "";
+const sanitize = (val?: string) => {
+  if (!val) return "";
+  return String(val).replace(/[\s"']/g, ""); // Aggressively remove all whitespace, newlines, and quotes
+};
 
 const rawUrl =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
   (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
-  "https://onibgpjwkqxvxrxoohrz.supabase.co";
+  "https://pscgatabfgvmmhnuvocu.supabase.co";
 
-const rawKey =
+const envKey =
   (typeof import.meta !== "undefined" &&
     (import.meta.env?.VITE_SUPABASE_ANON_KEY || import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
   (typeof process !== "undefined" &&
-    (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY)) ||
-  "sb_publishable_8W5UcYn7HiT57Z7KY-5rlw_n1u-TP2C";
+    (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY));
+
+// Force the JWT anon key. If the Vercel environment has the new opaque token (sb_publishable_), 
+// we ignore it because Realtime WebSockets require the JWT anon key.
+const rawKey = (envKey && !envKey.startsWith("sb_publishable_")) 
+  ? envKey 
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzY2dhdGFiZmd2bW1obnV2b2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjI1MjksImV4cCI6MjEwNTgzODUyOX0.yaMsOuFKo0C8X3s50Gc0r4_Pu_G7YcWXUBRVmxfQC_w";
 
 const supabaseUrl = sanitize(rawUrl);
 const supabaseAnonKey = sanitize(rawKey);
@@ -28,29 +31,32 @@ function isNewSupabaseApiKey(value: string): boolean {
 }
 
 const customFetch: typeof fetch = (input, init) => {
-  const headers = new Headers(
-    typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-  );
+  const cleanHeaders: Record<string, string> = {};
 
   if (init?.headers) {
-    new Headers(init.headers).forEach((value, key) => {
-      if (value !== undefined && value !== null) {
-        headers.set(key, String(value));
+    const rawHeaders = init.headers;
+    if (rawHeaders instanceof Headers) {
+      rawHeaders.forEach((value, key) => {
+        cleanHeaders[key] = value.replace(/[\r\n]/g, ""); // Strip newlines
+      });
+    } else if (Array.isArray(rawHeaders)) {
+      rawHeaders.forEach(([key, value]) => {
+        cleanHeaders[key] = value.replace(/[\r\n]/g, "");
+      });
+    } else {
+      for (const [key, value] of Object.entries(rawHeaders)) {
+        if (value) cleanHeaders[key] = String(value).replace(/[\r\n]/g, "");
       }
-    });
+    }
   }
 
-  // Remove invalid bearer auth when using opaque publishable key format
-  if (
-    isNewSupabaseApiKey(supabaseAnonKey) &&
-    headers.get("Authorization") === `Bearer ${supabaseAnonKey}`
-  ) {
-    headers.delete("Authorization");
-  }
+  // We previously deleted the Authorization header here, but since we aggressively 
+  // sanitize the API key for newlines/whitespace, we don't need to do that anymore.
+  // Deleting it might break PostgREST or Kong which expect the Bearer token.
+  
+  cleanHeaders["apikey"] = supabaseAnonKey;
 
-  headers.set("apikey", supabaseAnonKey);
-
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...init, headers: cleanHeaders });
 };
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
