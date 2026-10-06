@@ -33,8 +33,10 @@ export const heroBanners = [
   { image: drippers.url, title: "أقماع تقطير زجاجية", desc: "تصميم مضلع احترافي بمقاسات 01 و 02" },
 ];
 
-export type CategoryId = "coffee" | "tools" | "matcha" | "green";
+// Category ids are managed from the admin panel (`categories` table), so any string is valid.
+export type CategoryId = string;
 
+// Fallback list — used only when the `categories` table is unavailable (see lib/categories.ts).
 export const categories: { id: CategoryId; name: string; desc: string; image: string }[] = [
   {
     id: "coffee",
@@ -382,8 +384,6 @@ export function useLiveProducts() {
 
   return { products: items, loading, reload: load };
 }
-
-export const grindOptions = ["حبوب كاملة", "إسبريسو", "V60", "فرنش بريس"];
 
 export const findProduct = (slug: string) => products.find((p) => p.slug === slug);
 

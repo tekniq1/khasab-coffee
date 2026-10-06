@@ -3,7 +3,8 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Coffee, ShieldCheck, Truck } from
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
 
-import { ProductCard } from "@/components/product-card";
+import { CategoryRow } from "@/components/category-row";
+import { useLiveCategories } from "@/lib/categories";
 import { heroBanners, products, useLiveProducts } from "@/lib/products";
 import { useLiveStoreSettings } from "@/lib/settings";
 
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [activeBanner, setActiveBanner] = useState(0);
   const { products: liveProducts } = useLiveProducts();
+  const { categories } = useLiveCategories();
   const { settings } = useLiveStoreSettings();
   const liveBanners =
     settings.hero_banners && settings.hero_banners.length > 0 ? settings.hero_banners : heroBanners;
@@ -42,8 +44,12 @@ function Index() {
   }, [liveBanners.length]);
 
   const activeItems = (liveProducts || products || []).filter((p) => p && p.isActive !== false);
-  const bestSellers = activeItems.filter((x) => x.bestSeller);
-  const displayProducts = bestSellers.length > 0 ? bestSellers : activeItems.slice(0, 4);
+  const categoryRows = categories
+    .map((category) => ({
+      category,
+      items: activeItems.filter((p) => p.category === category.id),
+    }))
+    .filter((row) => row.items.length > 0);
 
   return (
     <div>
@@ -165,32 +171,17 @@ function Index() {
         ))}
       </section>
 
-      {/* Best Sellers Section (المنتجات الأكثر مبيعاً) */}
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-secondary uppercase tracking-wider">
-              مختارات خصب المميزة
-            </span>
-            <h2 className="text-2xl font-extrabold text-primary sm:text-3xl">
-              المنتجات الأكثر مبيعاً
-            </h2>
-          </div>
-          <Link
-            to="/products"
-            search={{}}
-            className="text-sm font-bold text-secondary hover:underline"
-          >
-            عرض كل المنتجات
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {displayProducts.map((prod, i) => (
-            <ProductCard key={prod.slug} product={prod} index={i} />
-          ))}
-        </div>
-      </section>
+      {/* Category rows — one horizontal section per category (managed from admin) */}
+      <div className="border-t border-border/60">
+        {categoryRows.map(({ category, items }) => (
+          <CategoryRow
+            key={category.id}
+            categoryId={category.id}
+            title={category.name}
+            products={items}
+          />
+        ))}
+      </div>
 
       {/* CTA Section */}
       <section className="mx-auto max-w-6xl px-4 py-10">

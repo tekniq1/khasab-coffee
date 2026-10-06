@@ -146,6 +146,14 @@
   animation: khasab-marquee 28s linear infinite;
 }
 
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @keyframes khasab-marquee {
   from {
     transform: translateX(0);

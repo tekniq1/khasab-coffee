@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, MessageCircle, Phone, Youtube, Twitter, Facebook, Globe } from "lucide-react";
 
-import { brandLogo, categories } from "@/lib/products";
+import { useLiveCategories } from "@/lib/categories";
+import { brandLogo } from "@/lib/products";
 import { useLiveStoreSettings } from "@/lib/settings";
 
 export function SiteFooter() {
   const { settings } = useLiveStoreSettings();
+  const { categories } = useLiveCategories();
   const phone = settings.whatsapp_number || "967777000000";
   const cleanPhone = phone.replace(/\D/g, "");
 

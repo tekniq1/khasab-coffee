@@ -47,6 +47,19 @@ export type SocialLink = {
   label?: string;
 };
 
+export type GrindOption = {
+  label: string;
+  priceYer: number;
+  priceSar: number;
+};
+
+export const defaultGrindOptions: GrindOption[] = [
+  { label: "حبوب كاملة", priceYer: 0, priceSar: 0 },
+  { label: "إسبريسو", priceYer: 0, priceSar: 0 },
+  { label: "V60", priceYer: 0, priceSar: 0 },
+  { label: "فرنش بريس", priceYer: 0, priceSar: 0 },
+];
+
 export type StoreSettings = {
   id?: string;
   store_name?: string;
@@ -69,6 +82,7 @@ export type StoreSettings = {
   about_cards?: { title: string; desc: string }[];
   categories?: { id: string; name: string }[];
   social_links?: SocialLink[];
+  grind_options?: GrindOption[];
 };
 
 export function parseStoreSettings(row: any): StoreSettings {
@@ -170,6 +184,7 @@ export function parseStoreSettings(row: any): StoreSettings {
     about_cards: row.about_cards || legacyExtra.about_cards || [],
     categories: row.categories || legacyExtra.categories || [],
     social_links: socialLinks,
+    grind_options: row.grind_options || legacyExtra.grind_options || defaultGrindOptions,
   };
 }
 
@@ -196,6 +211,7 @@ export function useLiveStoreSettings() {
     about_cards: [],
     categories: [],
     social_links: [],
+    grind_options: defaultGrindOptions,
   });
   const [loading, setLoading] = useState(true);
 

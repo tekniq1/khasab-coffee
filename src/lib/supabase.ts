@@ -17,11 +17,12 @@ const envKey =
   (typeof process !== "undefined" &&
     (process.env?.VITE_SUPABASE_ANON_KEY || process.env?.VITE_SUPABASE_PUBLISHABLE_KEY));
 
-// Force the JWT anon key. If the Vercel environment has the new opaque token (sb_publishable_), 
+// Force the JWT anon key. If the Vercel environment has the new opaque token (sb_publishable_),
 // we ignore it because Realtime WebSockets require the JWT anon key.
-const rawKey = (envKey && !envKey.startsWith("sb_publishable_")) 
-  ? envKey 
-  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzY2dhdGFiZmd2bW1obnV2b2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjI1MjksImV4cCI6MjEwNTgzODUyOX0.yaMsOuFKo0C8X3s50Gc0r4_Pu_G7YcWXUBRVmxfQC_w";
+const rawKey =
+  envKey && !envKey.startsWith("sb_publishable_")
+    ? envKey
+    : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzY2dhdGFiZmd2bW1obnV2b2N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNjI1MjksImV4cCI6MjEwNTgzODUyOX0.yaMsOuFKo0C8X3s50Gc0r4_Pu_G7YcWXUBRVmxfQC_w";
 
 const supabaseUrl = sanitize(rawUrl);
 const supabaseAnonKey = sanitize(rawKey);
@@ -50,10 +51,10 @@ const customFetch: typeof fetch = (input, init) => {
     }
   }
 
-  // We previously deleted the Authorization header here, but since we aggressively 
+  // We previously deleted the Authorization header here, but since we aggressively
   // sanitize the API key for newlines/whitespace, we don't need to do that anymore.
   // Deleting it might break PostgREST or Kong which expect the Bearer token.
-  
+
   cleanHeaders["apikey"] = supabaseAnonKey;
 
   return fetch(input, { ...init, headers: cleanHeaders });

@@ -73,9 +73,9 @@ function AuthPage() {
     const cleanName = fullName.trim();
     // Sanitize phone to only digits for the virtual email
     const sanitizedPhone = phone.replace(/\D/g, "");
-    
+
     // For login, the 'email' state holds either phone or email
-    const identifier = email.trim().toLowerCase(); 
+    const identifier = email.trim().toLowerCase();
 
     if (mode === "signin" && (!identifier || !cleanPassword)) {
       toast.error("يرجى إدخال رقم الهاتف أو البريد وكلمة المرور");
@@ -90,7 +90,7 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const virtualEmail = `${sanitizedPhone}@khasab.coffee`;
-        
+
         const { data, error } = await supabase.auth.signUp({
           email: virtualEmail,
           password: cleanPassword,
@@ -128,8 +128,8 @@ function AuthPage() {
       } else {
         // SIGN IN
         // Check if user entered an email (contains @) or a phone number
-        const authEmail = identifier.includes("@") 
-          ? identifier 
+        const authEmail = identifier.includes("@")
+          ? identifier
           : `${identifier.replace(/\D/g, "")}@khasab.coffee`;
 
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -172,7 +172,9 @@ function AuthPage() {
           <button
             onClick={() => setMode("signup")}
             className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition-all ${
-              mode === "signup" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-primary"
+              mode === "signup"
+                ? "bg-background text-primary shadow-sm"
+                : "text-muted-foreground hover:text-primary"
             }`}
           >
             إنشاء حساب
@@ -180,7 +182,9 @@ function AuthPage() {
           <button
             onClick={() => setMode("signin")}
             className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition-all ${
-              mode === "signin" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-primary"
+              mode === "signin"
+                ? "bg-background text-primary shadow-sm"
+                : "text-muted-foreground hover:text-primary"
             }`}
           >
             تسجيل الدخول
@@ -223,7 +227,9 @@ function AuthPage() {
 
           <label className="block space-y-1.5">
             <span className="text-sm font-bold text-primary">
-              {mode === "signin" ? "رقم الهاتف أو البريد الإلكتروني *" : "البريد الإلكتروني (اختياري)"}
+              {mode === "signin"
+                ? "رقم الهاتف أو البريد الإلكتروني *"
+                : "البريد الإلكتروني (اختياري)"}
             </span>
             <input
               type={mode === "signin" ? "text" : "email"}
@@ -255,9 +261,37 @@ function AuthPage() {
                 className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-primary transition-colors"
               >
                 {showPassword ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m2 2 20 20"/><path d="M6.71 6.71q2.48-2.18 5.29-2.18 5.46 0 9.27 4.19a15.11 15.11 0 0 1-2 2.65"/><path d="M14.07 14.07A3 3 0 0 1 9.93 9.93"/><path d="M17.48 17.48A14.65 14.65 0 0 1 12 18.96q-5.46 0-9.27-4.19a15.11 15.11 0 0 1 3.53-3.76"/></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m2 2 20 20" />
+                    <path d="M6.71 6.71q2.48-2.18 5.29-2.18 5.46 0 9.27 4.19a15.11 15.11 0 0 1-2 2.65" />
+                    <path d="M14.07 14.07A3 3 0 0 1 9.93 9.93" />
+                    <path d="M17.48 17.48A14.65 14.65 0 0 1 12 18.96q-5.46 0-9.27-4.19a15.11 15.11 0 0 1 3.53-3.76" />
+                  </svg>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
                 )}
               </button>
             </div>
@@ -293,7 +327,9 @@ function AuthPage() {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t"></div>
           </div>
-          <span className="relative bg-card px-4 text-xs font-medium text-muted-foreground">أو</span>
+          <span className="relative bg-card px-4 text-xs font-medium text-muted-foreground">
+            أو
+          </span>
         </div>
 
         <button

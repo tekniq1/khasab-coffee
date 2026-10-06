@@ -7,7 +7,8 @@ import { AddToCartModal } from "@/components/add-to-cart-modal";
 import { ProductCard } from "@/components/product-card";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
-import { findProduct, grindOptions, products, useLiveProducts, type Product } from "@/lib/products";
+import { findProduct, products, useLiveProducts, type Product } from "@/lib/products";
+import { useLiveStoreSettings, type GrindOption, defaultGrindOptions } from "@/lib/settings";
 
 export const Route = createFileRoute("/product/$slug")({
   loader: ({ params }) => ({ slug: params.slug }),
@@ -29,12 +30,15 @@ export const Route = createFileRoute("/product/$slug")({
 function ProductPage() {
   const { slug } = Route.useLoaderData();
   const { products: liveProducts } = useLiveProducts();
+  const { settings } = useLiveStoreSettings();
+  const storeGrinds = settings.grind_options || defaultGrindOptions;
+
   const { add } = useCart();
   const { price } = useCurrency();
 
   const product = liveProducts.find((p) => p.slug === slug) || findProduct(slug);
 
-  const [grind, setGrind] = useState(grindOptions[0]!);
+  const [grind, setGrind] = useState<GrindOption>(storeGrinds[0] || defaultGrindOptions[0]!);
   const [variant, setVariant] = useState(
     product?.variants?.[0] || { label: "قطعة", yer: 9000, sar: 22 },
   );
@@ -48,6 +52,13 @@ function ProductPage() {
       setSelectedImage(product.image || product.images?.[0] || "");
     }
   }, [product]);
+
+  // Update selected grind if store settings change and old one isn't there
+  useEffect(() => {
+    if (!storeGrinds.find((g) => g.label === grind?.label)) {
+      setGrind(storeGrinds[0] || defaultGrindOptions[0]!);
+    }
+  }, [storeGrinds, grind?.label]);
 
   if (!product) {
     return (
@@ -78,10 +89,10 @@ function ProductPage() {
       slug: product.slug,
       name: product.name,
       image: currentImg,
-      price: variant.yer,
-      priceSar: variant.sar,
+      price: variant.yer + (product.isCoffee && grind ? grind.priceYer : 0),
+      priceSar: variant.sar + (product.isCoffee && grind ? grind.priceSar : 0),
       qty,
-      options: product.isCoffee ? `${grind} • ${variant.label}` : variant.label,
+      options: product.isCoffee && grind ? `${grind.label} • ${variant.label}` : variant.label,
       maxStock: variant.stock !== undefined ? variant.stock : (product.stockQuantity ?? 50),
     });
     setModalOpen(true);
@@ -130,22 +141,37 @@ function ProductPage() {
           <p className="mt-2 text-sm leading-7 text-muted-foreground">
             {product.description || product.short}
           </p>
-          <div className="mt-4 text-2xl font-extrabold">{price(variant)}</div>
+          <div className="mt-4 text-2xl font-extrabold">
+            {price({
+              yer: variant.yer + (product.isCoffee && grind ? grind.priceYer : 0),
+              sar: variant.sar + (product.isCoffee && grind ? grind.priceSar : 0),
+              label: "",
+            })}
+          </div>
 
           <div className="mt-6 space-y-5">
             {product.isCoffee && (
               <div>
                 <div className="mb-2 text-sm font-bold">درجة الطحن</div>
                 <div className="flex flex-wrap gap-2">
-                  {grindOptions.map((g) => (
+                  {storeGrinds.map((g) => (
                     <button
-                      key={g}
+                      key={g.label}
                       onClick={() => setGrind(g)}
-                      className={`rounded-full border px-4 py-2 text-xs font-semibold transition-colors ${
-                        grind === g ? "bg-primary text-primary-foreground" : "bg-card"
+                      className={`rounded-full border px-4 py-2 text-xs font-semibold transition-colors flex items-center gap-1 ${
+                        grind?.label === g.label
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card hover:border-primary"
                       }`}
                     >
-                      {g}
+                      {g.label}
+                      {g.priceYer > 0 && (
+                        <span
+                          className={`text-[10px] opacity-80 ${grind?.label === g.label ? "text-primary-foreground" : "text-muted-foreground"}`}
+                        >
+                          (+{price({ yer: g.priceYer, sar: g.priceSar, label: "" })})
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -321,9 +347,10 @@ function ProductPage() {
         product={{
           name: product.name,
           image: currentImg,
-          variantLabel: product.isCoffee ? `${grind} • ${variant.label}` : variant.label,
-          priceYer: variant.yer * qty,
-          priceSar: variant.sar * qty,
+          variantLabel:
+            product.isCoffee && grind ? `${grind.label} • ${variant.label}` : variant.label,
+          priceYer: (variant.yer + (product.isCoffee && grind ? grind.priceYer : 0)) * qty,
+          priceSar: (variant.sar + (product.isCoffee && grind ? grind.priceSar : 0)) * qty,
         }}
       />
     </div>
