@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageX, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 
 import { ProductCard } from "@/components/product-card";
-import { useLiveCategories } from "@/lib/categories";
-import { products, useLiveProducts, type CategoryId } from "@/lib/products";
+import { categories, products, useLiveProducts, type CategoryId } from "@/lib/products";
 
 const searchSchema = z.object({
-  cat: z.string().optional(),
+  cat: z.enum(["coffee", "tools", "matcha", "green"]).optional(),
   q: z.string().optional(),
 });
 
@@ -29,15 +28,9 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const { cat, q } = Route.useSearch();
   const [selectedCat, setSelectedCat] = useState<CategoryId | "all">(cat ?? "all");
-  const { products: liveProducts, loading: productsLoading } = useLiveProducts();
-  const { categories } = useLiveCategories();
-
-  useEffect(() => {
-    setSelectedCat(cat ?? "all");
-  }, [cat]);
+  const { products: liveProducts } = useLiveProducts();
 
   const activeItems = (liveProducts || products || []).filter((p) => p && p.isActive !== false);
-  const countIn = (id: string) => activeItems.filter((p) => p.category === id).length;
 
   const filtered = activeItems.filter((p) => {
     if (selectedCat !== "all" && p.category !== selectedCat) return false;
@@ -78,7 +71,7 @@ function ProductsPage() {
             }`}
           >
             {c.name}
-            {!productsLoading && countIn(c.id) === 0 && (
+            {(c.id === "matcha" || c.id === "green") && (
               <span className="ms-1.5 rounded-full bg-secondary/20 px-2 py-0.5 text-[10px] text-secondary">
                 قريباً
               </span>

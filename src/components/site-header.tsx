@@ -5,10 +5,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Marquee } from "@/components/marquee";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useLiveCategories } from "@/lib/categories";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/lib/currency";
-import { brandLogo, searchProducts, useLiveProducts } from "@/lib/products";
+import { brandLogo, categories, searchProducts, useLiveProducts } from "@/lib/products";
 import { useLiveStoreSettings } from "@/lib/settings";
 
 const navLinks = [
@@ -21,7 +20,6 @@ export function SiteHeader() {
   const { count } = useCart();
   const { currency, toggle } = useCurrency();
   const { products: liveProducts } = useLiveProducts();
-  const { categories } = useLiveCategories();
   const { settings } = useLiveStoreSettings();
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
