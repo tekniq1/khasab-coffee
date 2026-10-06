@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  ArrowDown,
+  ArrowUp,
   BarChart3,
   ChevronDown,
   Coffee,
@@ -62,13 +64,26 @@ import {
   defaultWhatsAppNumber,
   defaultStoreName,
   defaultAdenDeliveryFee,
+  defaultAdenDeliveryFeeSar,
   defaultPickupFee,
+  defaultPickupFeeSar,
   defaultOtherDeliveryFee,
+  defaultOtherDeliveryFeeSar,
   defaultGrindOptions,
   type BankAccount,
   type StoreSettings,
 } from "@/lib/settings";
 import { BankLogo, availableBankOptions } from "@/components/bank-logo";
+
+/** Converts typed text (Arabic ٠-٩ or English 0-9) into a non-negative number. */
+function toPriceNumber(raw: string): number {
+  const western = raw
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[^0-9.]/g, "");
+  const n = parseFloat(western);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -3279,32 +3294,34 @@ function StoreSettingsModule({
                 <div className="flex items-center gap-1.5 min-w-28">
                   <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">ر.ي</span>
                   <input
-                    type="number"
-                    min={0}
-                    value={g.priceYer}
+                    type="text"
+                    inputMode="numeric"
+                    dir="ltr"
+                    value={g.priceYer ? String(g.priceYer) : ""}
                     onChange={(e) => {
                       const updated = [...grindOptions];
-                      updated[idx] = { ...updated[idx]!, priceYer: Number(e.target.value) };
+                      updated[idx] = { ...updated[idx]!, priceYer: toPriceNumber(e.target.value) };
                       setGrindOptions(updated);
                     }}
                     placeholder="0"
-                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 {/* Price SAR */}
                 <div className="flex items-center gap-1.5 min-w-24">
                   <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">ر.س</span>
                   <input
-                    type="number"
-                    min={0}
-                    value={g.priceSar}
+                    type="text"
+                    inputMode="numeric"
+                    dir="ltr"
+                    value={g.priceSar ? String(g.priceSar) : ""}
                     onChange={(e) => {
                       const updated = [...grindOptions];
-                      updated[idx] = { ...updated[idx]!, priceSar: Number(e.target.value) };
+                      updated[idx] = { ...updated[idx]!, priceSar: toPriceNumber(e.target.value) };
                       setGrindOptions(updated);
                     }}
                     placeholder="0"
-                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
                 {/* Free badge */}
@@ -3350,23 +3367,25 @@ function StoreSettingsModule({
               <div className="flex items-center gap-1.5 min-w-28">
                 <span className="text-[10px] font-bold text-muted-foreground">ر.ي</span>
                 <input
-                  type="number"
-                  min={0}
-                  value={newGrind.priceYer}
-                  onChange={(e) => setNewGrind({ ...newGrind, priceYer: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  dir="ltr"
+                  value={newGrind.priceYer ? String(newGrind.priceYer) : ""}
+                  onChange={(e) => setNewGrind({ ...newGrind, priceYer: toPriceNumber(e.target.value) })}
                   placeholder="0"
-                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-secondary/30"
                 />
               </div>
               <div className="flex items-center gap-1.5 min-w-24">
                 <span className="text-[10px] font-bold text-muted-foreground">ر.س</span>
                 <input
-                  type="number"
-                  min={0}
-                  value={newGrind.priceSar}
-                  onChange={(e) => setNewGrind({ ...newGrind, priceSar: Number(e.target.value) })}
+                  type="text"
+                  inputMode="numeric"
+                  dir="ltr"
+                  value={newGrind.priceSar ? String(newGrind.priceSar) : ""}
+                  onChange={(e) => setNewGrind({ ...newGrind, priceSar: toPriceNumber(e.target.value) })}
                   placeholder="0"
-                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold text-center focus:outline-none focus:ring-2 focus:ring-secondary/30"
                 />
               </div>
               <button
