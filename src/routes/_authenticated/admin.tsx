@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   ChevronDown,
+  Coffee,
   CreditCard,
   DollarSign,
   Edit,
