@@ -27,9 +27,6 @@ import {
   Globe,
   Users,
   X,
-  ArrowUp,
-  ArrowDown,
-  LayoutGrid,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -47,13 +44,11 @@ import { toast } from "sonner";
 
 import { supabase } from "@/lib/supabase";
 import { useCurrency } from "@/lib/currency";
-import { makeCategoryId, useLiveCategories, type Category } from "@/lib/categories";
 import {
   formatPrice,
   products as defaultProducts,
   brandLogo,
   fetchProductsFromSupabase,
-  type CategoryId,
   type Product,
 } from "@/lib/products";
 import {
@@ -67,7 +62,6 @@ import {
   defaultOtherDeliveryFee,
   defaultGrindOptions,
   type BankAccount,
-  type GrindOption,
   type StoreSettings,
 } from "@/lib/settings";
 import { BankLogo, availableBankOptions } from "@/components/bank-logo";
@@ -149,7 +143,7 @@ function AdminPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<
-    "analytics" | "products" | "categories" | "orders" | "customers" | "store" | "security"
+    "analytics" | "products" | "orders" | "customers" | "store" | "security"
   >("analytics");
   const [realtimeActive, setRealtimeActive] = useState(false);
 
@@ -378,7 +372,6 @@ function AdminPage() {
         {[
           { id: "analytics", label: "التقارير والأرباح", icon: BarChart3 },
           { id: "products", label: "المنتجات والمخزون", icon: Package },
-          { id: "categories", label: "الأقسام", icon: LayoutGrid },
           { id: "orders", label: "الطلبات والتتبع المباشر", icon: Truck },
           { id: "customers", label: "سجلات العملاء", icon: Users },
           { id: "store", label: "تخصيص المحتوى", icon: Sliders },
@@ -424,7 +417,6 @@ function AdminPage() {
         {activeTab === "products" && (
           <ProductsModule products={allProducts} refetch={() => productsQuery.refetch()} />
         )}
-        {activeTab === "categories" && <CategoriesModule products={allProducts} />}
         {activeTab === "orders" && (
           <OrdersModule orders={allOrders} refetch={() => ordersQuery.refetch()} />
         )}
@@ -648,7 +640,6 @@ function AnalyticsModule({
    ==================================================================== */
 function ProductsModule({ products, refetch }: { products: Product[]; refetch: () => void }) {
   const { currency } = useCurrency();
-  const { categories: categoryOptions } = useLiveCategories({ includeHidden: true });
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -1048,7 +1039,13 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                       </td>
                       <td className="p-3.5">
                         <span className="inline-flex rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-bold text-muted-foreground">
-                          {categoryOptions.find((c) => c.id === p.category)?.name ?? p.category}
+                          {p.category === "coffee"
+                            ? "محاصيل بن"
+                            : p.category === "tools"
+                              ? "أدوات تحضير"
+                              : p.category === "matcha"
+                                ? "ماتشا"
+                                : "بن أخضر"}
                         </span>
                       </td>
                       <td className="p-3.5 font-bold">
@@ -1307,31 +1304,16 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                       setForm({
                         ...form,
                         category: e.target.value as CategoryId,
+                        isCoffee: e.target.value === "coffee",
                       })
                     }
                     className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
                   >
-                    {categoryOptions.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                        {c.is_active ? "" : " (مخفي)"}
-                      </option>
-                    ))}
-                    {!categoryOptions.some((c) => c.id === form.category) && (
-                      <option value={form.category}>{form.category} (قسم غير موجود)</option>
-                    )}
+                    <option value="coffee">محاصيل القهوة المختصة</option>
+                    <option value="tools">أدوات وإكسسوارات الباريستا</option>
+                    <option value="matcha">ماتشا</option>
+                    <option value="green">محاصيل البن الخضراء</option>
                   </select>
-                </label>
-                <label className="flex items-center gap-2 sm:col-span-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.isCoffee}
-                    onChange={(e) => setForm({ ...form, isCoffee: e.target.checked })}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="text-xs font-bold text-muted-foreground">
-                    منتج قهوة (يُظهر للعميل خيار درجة الطحن وبيانات المحصول)
-                  </span>
                 </label>
               </div>
 
@@ -2270,16 +2252,19 @@ function StoreSettingsModule({
   const [uploadingBannerIdx, setUploadingBannerIdx] = useState<number | null>(null);
   const [uploadingNewBanner, setUploadingNewBanner] = useState(false);
   // About & Footer settings
-  const [instagramHandle, setInstagramHandle] = useState(settings?.instagram_handle ?? "khasab");
+  const [instagramHandle, setInstagramHandle] = useState(
+    settings?.instagram_handle ?? "khasab",
+  );
   const [aboutText, setAboutText] = useState(settings?.about_text ?? "");
   const [footerText, setFooterText] = useState(
     settings?.footer_text ??
       "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
   );
   const [socialLinks, setSocialLinks] = useState<any[]>(settings?.social_links || []);
-  const [grindOptions, setGrindOptions] = useState<GrindOption[]>(
-    settings?.grind_options || defaultGrindOptions,
+  const [grindOptions, setGrindOptions] = useState<{ label: string; priceYer: number; priceSar: number }[]>(
+    settings?.grind_options?.length ? settings.grind_options : defaultGrindOptions,
   );
+  const [newGrind, setNewGrind] = useState({ label: "", priceYer: 0, priceSar: 0 });
   const [saving, setSaving] = useState(false);
   const [uploadingLogoIdx, setUploadingLogoIdx] = useState<number | null>(null);
   const [uploadingBrandLogo, setUploadingBrandLogo] = useState(false);
@@ -2309,8 +2294,9 @@ function StoreSettingsModule({
         "مو بس محصولك.. عدّتك علينا. كل أدوات القهوة اللي تحتاجها بجودة ترفع تجربتك.",
     );
     setSocialLinks(settings.social_links || []);
-    setGrindOptions(settings.grind_options || defaultGrindOptions);
+    setGrindOptions(settings.grind_options?.length ? settings.grind_options : defaultGrindOptions);
   }, [settings?.id]);
+
 
   // Handle Brand Logo Upload
   const handleBrandLogoUpload = async (file: File) => {
@@ -2408,9 +2394,7 @@ function StoreSettingsModule({
         .from("product-images")
         .upload(filePath, file, { cacheControl: "3600", upsert: true });
       if (uploadError) throw uploadError;
-      const { data: publicUrlData } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
       if (publicUrlData?.publicUrl) {
         const updated = [...heroBannersEdit];
         updated[idx] = { ...updated[idx]!, image: publicUrlData.publicUrl };
@@ -2435,9 +2419,7 @@ function StoreSettingsModule({
         .from("product-images")
         .upload(filePath, file, { cacheControl: "3600", upsert: true });
       if (uploadError) throw uploadError;
-      const { data: publicUrlData } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(filePath);
+      const { data: publicUrlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
       if (publicUrlData?.publicUrl) {
         setNewBanner((prev) => ({ ...prev, image: publicUrlData.publicUrl }));
         toast.success("تم رفع صورة البانر الجديد");
@@ -2488,9 +2470,10 @@ function StoreSettingsModule({
         about_text: aboutText,
         footer_text: footerText,
         social_links: socialLinks,
-        grind_options: grindOptions,
         // Hero banners (actual banner images list)
         hero_banners: heroBannersEdit,
+        // Grind options with pricing
+        grind_options: grindOptions,
         updated_at: new Date().toISOString(),
       };
 
@@ -2783,9 +2766,7 @@ function StoreSettingsModule({
                 src={newBanner.image}
                 alt="معاينة البانر الجديد"
                 className="h-20 w-full object-cover rounded-xl"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             )}
             <input
@@ -2806,8 +2787,7 @@ function StoreSettingsModule({
               type="button"
               onClick={() => {
                 if (!newBanner.title.trim()) return toast.error("أدخل عنوان البانر أولاً");
-                if (!newBanner.image.trim())
-                  return toast.error("أدخل رابط الصورة أو ارفع صورة للبانر");
+                if (!newBanner.image.trim()) return toast.error("أدخل رابط الصورة أو ارفع صورة للبانر");
                 setHeroBannersEdit([...heroBannersEdit, { ...newBanner }]);
                 setNewBanner({ image: "", title: "", desc: "" });
                 toast.success("تمت إضافة البانر — لا تنس الضغط على حفظ التغييرات");
@@ -2818,6 +2798,7 @@ function StoreSettingsModule({
             </button>
           </div>
         </div>
+
 
         {/* Section 1.6: About Page & Instagram */}
         <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
@@ -3260,111 +3241,148 @@ function StoreSettingsModule({
           </div>
         </div>
 
-        {/* Section: Grind Options */}
-        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* ── Grind Options Section ── */}
+        <div className="rounded-3xl border bg-card p-6 shadow-xs space-y-5">
+          <div>
             <h4 className="font-extrabold text-sm text-primary flex items-center gap-2">
-              <Package className="h-4 w-4 text-secondary" />
-              5. درجات الطحن وأسعارها الإضافية (خاص بمنتجات القهوة)
+              <Coffee className="h-4 w-4 text-secondary" />
+              درجات الطحن وأسعارها (يظهر للعميل عند شراء القهوة)
             </h4>
-            <button
-              type="button"
-              onClick={() => {
-                setGrindOptions([
-                  ...grindOptions,
-                  { label: "درجة طحن جديدة", priceYer: 0, priceSar: 0 },
-                ]);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-secondary/15 px-3.5 py-1.5 text-xs font-bold text-secondary hover:bg-secondary/25"
-            >
-              <Plus className="h-3.5 w-3.5" /> إضافة درجة طحن جديدة
-            </button>
+            <p className="text-xs text-muted-foreground mt-1">
+              إذا كان السعر 0 فيظهر للعميل أن الطحن مجاني. إذا أضفت سعراً يُضاف تلقائياً على سعر المنتج.
+            </p>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            تستطيع هنا التحكم بخيارات الطحن المتاحة للعميل عند شراء القهوة. في حال أضفت سعراً
-            إضافياً، سيتم حسابه فوق سعر المنتج عند اختيار العميل لهذه الدرجة (مثال: إذا كان الطحن
-            مجاني، اترك السعر 0).
-          </p>
-
-          <div className="space-y-4">
-            {grindOptions.map((grind, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl border bg-background p-4 space-y-3 shadow-xs flex flex-wrap items-end gap-4"
-              >
-                <label className="block flex-1 min-w-[200px]">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">
-                    اسم درجة الطحن (مثل: إسبريسو، V60)
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={grind.label}
-                    onChange={(e) => {
-                      const updated = [...grindOptions];
-                      updated[idx] = { ...updated[idx]!, label: e.target.value };
-                      setGrindOptions(updated);
-                    }}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-bold"
-                  />
-                </label>
-
-                <label className="block w-24">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">
-                    السعر الإضافي (ريال يمني)
-                  </span>
+          {/* Existing grind rows */}
+          <div className="space-y-3">
+            {grindOptions.map((g, idx) => (
+              <div key={idx} className="flex flex-wrap items-center gap-3 rounded-2xl border bg-background p-3">
+                {/* Name */}
+                <input
+                  type="text"
+                  value={g.label}
+                  onChange={(e) => {
+                    const updated = [...grindOptions];
+                    updated[idx] = { ...updated[idx]!, label: e.target.value };
+                    setGrindOptions(updated);
+                  }}
+                  placeholder="اسم درجة الطحن"
+                  className="h-9 flex-1 min-w-28 rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                {/* Price YER */}
+                <div className="flex items-center gap-1.5 min-w-28">
+                  <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">ر.ي</span>
                   <input
                     type="number"
-                    min="0"
-                    value={grind.priceYer}
+                    min={0}
+                    value={g.priceYer}
                     onChange={(e) => {
                       const updated = [...grindOptions];
                       updated[idx] = { ...updated[idx]!, priceYer: Number(e.target.value) };
                       setGrindOptions(updated);
                     }}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-mono"
-                    dir="ltr"
+                    placeholder="0"
+                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                </label>
-
-                <label className="block w-24">
-                  <span className="text-[11px] font-bold text-muted-foreground block mb-1">
-                    السعر الإضافي (ريال سعودي)
-                  </span>
+                </div>
+                {/* Price SAR */}
+                <div className="flex items-center gap-1.5 min-w-24">
+                  <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">ر.س</span>
                   <input
                     type="number"
-                    min="0"
-                    step="0.1"
-                    value={grind.priceSar}
+                    min={0}
+                    value={g.priceSar}
                     onChange={(e) => {
                       const updated = [...grindOptions];
                       updated[idx] = { ...updated[idx]!, priceSar: Number(e.target.value) };
                       setGrindOptions(updated);
                     }}
-                    className="w-full rounded-xl border bg-card px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring font-mono"
-                    dir="ltr"
+                    placeholder="0"
+                    className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                </label>
-
-                <div className="flex items-center justify-end pb-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (grindOptions.length <= 1) {
-                        toast.error("يجب أن تترك درجة طحن واحدة على الأقل (مثل: حبوب كاملة).");
-                        return;
-                      }
-                      setGrindOptions(grindOptions.filter((_, i) => i !== idx));
-                    }}
-                    className="p-2 rounded-xl text-destructive hover:bg-destructive/10 transition-colors"
-                    title="حذف درجة الطحن"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
+                {/* Free badge */}
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap ${
+                    g.priceYer === 0
+                      ? "bg-emerald-500/15 text-emerald-700"
+                      : "bg-secondary/15 text-secondary"
+                  }`}
+                >
+                  {g.priceYer === 0 ? "مجاني" : `+${g.priceYer.toLocaleString()} ر.ي`}
+                </span>
+                {/* Delete */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (grindOptions.length <= 1) {
+                      toast.error("يجب الإبقاء على خيار طحن واحد على الأقل");
+                      return;
+                    }
+                    setGrindOptions(grindOptions.filter((_, i) => i !== idx));
+                  }}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                  title="حذف"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
             ))}
+          </div>
+
+          {/* Add new grind row */}
+          <div className="rounded-2xl border-2 border-dashed border-secondary/30 bg-secondary/5 p-4 space-y-3">
+            <p className="text-xs font-bold text-secondary">➕ إضافة درجة طحن جديدة</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="text"
+                value={newGrind.label}
+                onChange={(e) => setNewGrind({ ...newGrind, label: e.target.value })}
+                placeholder="اسم درجة الطحن (مثال: موكا)"
+                className="h-9 flex-1 min-w-36 rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-secondary/30"
+              />
+              <div className="flex items-center gap-1.5 min-w-28">
+                <span className="text-[10px] font-bold text-muted-foreground">ر.ي</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={newGrind.priceYer}
+                  onChange={(e) => setNewGrind({ ...newGrind, priceYer: Number(e.target.value) })}
+                  placeholder="0"
+                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 min-w-24">
+                <span className="text-[10px] font-bold text-muted-foreground">ر.س</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={newGrind.priceSar}
+                  onChange={(e) => setNewGrind({ ...newGrind, priceSar: Number(e.target.value) })}
+                  placeholder="0"
+                  className="h-9 w-full rounded-xl border bg-card px-3 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-secondary/30"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!newGrind.label.trim()) {
+                    toast.error("أدخل اسم درجة الطحن");
+                    return;
+                  }
+                  if (grindOptions.some((g) => g.label === newGrind.label.trim())) {
+                    toast.error("هذا الاسم موجود مسبقاً");
+                    return;
+                  }
+                  setGrindOptions([...grindOptions, { ...newGrind, label: newGrind.label.trim() }]);
+                  setNewGrind({ label: "", priceYer: 0, priceSar: 0 });
+                  toast.success(`تمت إضافة "${newGrind.label.trim()}" — لا تنس الحفظ`);
+                }}
+                className="flex items-center gap-1.5 rounded-full bg-secondary px-5 py-2 text-xs font-bold text-secondary-foreground shadow hover:opacity-90 whitespace-nowrap"
+              >
+                <Plus className="h-3.5 w-3.5" /> إضافة
+              </button>
+            </div>
           </div>
         </div>
 
@@ -3480,366 +3498,6 @@ function Info({ label, value }: { label: string; value?: string | null }) {
     <div>
       <span className="text-muted-foreground">{label}: </span>
       <span className="font-bold text-primary">{value || "—"}</span>
-    </div>
-  );
-}
-
-/* ====================================================================
-   MODULE: Categories (الأقسام) — each active category with products
-   becomes a horizontal row on the home page, in this order.
-   ==================================================================== */
-function CategoriesModule({ products }: { products: Product[] }) {
-  const { categories, tableMissing, reload } = useLiveCategories({ includeHidden: true });
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ id: "", name: "", image: "", is_active: true });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = () => (supabase as any).from("categories");
-  const countIn = (id: string) => products.filter((p) => p.category === id).length;
-
-  const openAdd = () => {
-    setEditing(null);
-    setForm({ id: "", name: "", image: "", is_active: true });
-    setFormOpen(true);
-  };
-
-  const openEdit = (c: Category) => {
-    setEditing(c);
-    setForm({ id: c.id, name: c.name, image: c.image || "", is_active: c.is_active });
-    setFormOpen(true);
-  };
-
-  const uploadImage = async (file: File) => {
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `categories/cat-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { contentType: file.type, upsert: true });
-      if (error) throw error;
-      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f) => ({ ...f, image: data.publicUrl }));
-      toast.success("تم رفع صورة القسم");
-    } catch (e) {
-      console.error(e);
-      toast.error("تعذر رفع الصورة");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = form.name.trim();
-    if (!name) {
-      toast.error("اكتب اسم القسم");
-      return;
-    }
-    setSaving(true);
-    try {
-      if (editing) {
-        const { error } = await db()
-          .update({ name, image: form.image || null, is_active: form.is_active })
-          .eq("id", editing.id);
-        if (error) throw error;
-        toast.success("تم تحديث القسم");
-      } else {
-        const id = makeCategoryId(form.id || name);
-        if (categories.some((c) => c.id === id)) {
-          toast.error("المعرّف مستخدم لقسم آخر، اختر معرّفاً مختلفاً");
-          return; // finally{} resets saving
-        }
-        const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0);
-        const { error } = await db().insert({
-          id,
-          name,
-          image: form.image || null,
-          is_active: form.is_active,
-          sort_order: maxOrder + 1,
-        });
-        if (error) throw error;
-        toast.success("تمت إضافة القسم — أضف له منتجات من تبويب المنتجات");
-      }
-      setFormOpen(false);
-      reload();
-    } catch (err: any) {
-      console.error(err);
-      toast.error("تعذر الحفظ: " + (err?.message || ""));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleActive = async (c: Category) => {
-    const { error } = await db().update({ is_active: !c.is_active }).eq("id", c.id);
-    if (error) toast.error("تعذر التحديث");
-    reload();
-  };
-
-  const move = async (index: number, dir: -1 | 1) => {
-    const target = index + dir;
-    if (target < 0 || target >= categories.length) return;
-    const reordered = [...categories];
-    [reordered[index], reordered[target]] = [reordered[target]!, reordered[index]!];
-    // Re-number everything so order stays consistent even if old values collided.
-    const results = await Promise.all(
-      reordered.map((c, i) =>
-        db()
-          .update({ sort_order: i + 1 })
-          .eq("id", c.id),
-      ),
-    );
-    if (results.some((r: any) => r.error)) toast.error("تعذر حفظ الترتيب");
-    reload();
-  };
-
-  const remove = async (c: Category) => {
-    const count = countIn(c.id);
-    if (count > 0) {
-      toast.error(
-        `لا يمكن حذف "${c.name}" لأن فيه ${count} منتج. انقل المنتجات لقسم آخر أولاً أو أخفِ القسم.`,
-      );
-      return;
-    }
-    if (!confirm(`حذف قسم "${c.name}" نهائياً؟`)) return;
-    const { error } = await db().delete().eq("id", c.id);
-    if (error) {
-      toast.error("تعذر الحذف");
-      return;
-    }
-    toast.success("تم حذف القسم");
-    reload();
-  };
-
-  return (
-    <div className="space-y-5">
-      {tableMissing && (
-        <div className="rounded-3xl border border-amber-300 bg-amber-50 p-5 text-xs leading-6 text-amber-900">
-          <div className="font-extrabold">جدول الأقسام غير موجود في قاعدة البيانات بعد</div>
-          يعرض المتجر حالياً الأقسام الافتراضية. لتفعيل إدارة الأقسام شغّل ملف
-          <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5" dir="ltr">
-            supabase/migrations/20261006000000_categories.sql
-          </code>
-          من SQL Editor في Supabase.
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border bg-card p-5 shadow-sm">
-        <div>
-          <h2 className="text-lg font-extrabold text-primary">أقسام المتجر</h2>
-          <p className="text-xs text-muted-foreground">
-            كل قسم ظاهر وفيه منتجات يظهر كصف أفقي في الصفحة الرئيسية بنفس هذا الترتيب.
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          disabled={tableMissing}
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-md disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" /> إضافة قسم
-        </button>
-      </div>
-
-      {formOpen && (
-        <form onSubmit={save} className="space-y-4 rounded-3xl border bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-primary">
-              {editing ? `تعديل: ${editing.name}` : "قسم جديد"}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setFormOpen(false)}
-              className="rounded-full p-1.5 hover:bg-muted"
-              aria-label="إغلاق"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold text-muted-foreground">
-                اسم القسم (العنوان في الرئيسية) *
-              </span>
-              <input
-                required
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="مثال: محاصيل فاخرة"
-                className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-bold text-muted-foreground">
-                المعرّف بالإنجليزي (يظهر في الرابط) {editing ? "— لا يمكن تغييره" : "— اختياري"}
-              </span>
-              <input
-                value={form.id}
-                disabled={!!editing}
-                onChange={(e) => setForm({ ...form, id: e.target.value })}
-                placeholder="premium-coffee"
-                dir="ltr"
-                className="w-full rounded-2xl border bg-background px-3.5 py-2.5 text-xs outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-              />
-            </label>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="h-20 w-20 overflow-hidden rounded-2xl border bg-muted">
-              {form.image ? (
-                <img src={form.image} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full place-items-center text-muted-foreground">
-                  <ImageIcon className="h-6 w-6" />
-                </div>
-              )}
-            </div>
-            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border bg-background px-4 py-2 text-xs font-bold text-primary hover:bg-muted">
-              <Upload className="h-3.5 w-3.5" />
-              {uploading ? "جارِ الرفع…" : "رفع صورة القسم"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) uploadImage(f);
-                }}
-              />
-            </label>
-            {form.image && (
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, image: "" })}
-                className="text-xs font-bold text-destructive hover:underline"
-              >
-                إزالة الصورة
-              </button>
-            )}
-            <label className="ms-auto flex cursor-pointer items-center gap-2 text-xs font-bold">
-              <input
-                type="checkbox"
-                checked={form.is_active}
-                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                className="h-4 w-4 accent-primary"
-              />
-              ظاهر في المتجر
-            </label>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setFormOpen(false)}
-              className="rounded-full border px-5 py-2.5 text-xs font-bold hover:bg-muted"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              disabled={saving || uploading}
-              className="rounded-full bg-primary px-6 py-2.5 text-xs font-bold text-primary-foreground disabled:opacity-60"
-            >
-              {saving ? "جارِ الحفظ…" : "حفظ القسم"}
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="overflow-hidden rounded-3xl border bg-card shadow-sm">
-        {categories.map((c, i) => {
-          const count = countIn(c.id);
-          return (
-            <div
-              key={c.id}
-              className={`flex flex-wrap items-center gap-3 border-b p-4 last:border-b-0 ${
-                c.is_active ? "" : "opacity-60"
-              }`}
-            >
-              <div className="flex flex-col gap-1">
-                <button
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0 || tableMissing}
-                  className="grid h-6 w-6 place-items-center rounded-md border hover:bg-muted disabled:opacity-30"
-                  aria-label="تحريك لأعلى"
-                >
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => move(i, 1)}
-                  disabled={i === categories.length - 1 || tableMissing}
-                  className="grid h-6 w-6 place-items-center rounded-md border hover:bg-muted disabled:opacity-30"
-                  aria-label="تحريك لأسفل"
-                >
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </button>
-              </div>
-
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border bg-muted">
-                {c.image ? (
-                  <img src={c.image} alt={c.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full place-items-center text-muted-foreground">
-                    <ImageIcon className="h-5 w-5" />
-                  </div>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="font-extrabold text-primary">{c.name}</div>
-                <div className="text-[11px] text-muted-foreground" dir="ltr">
-                  {c.id}
-                </div>
-              </div>
-
-              <span className="rounded-full bg-muted px-3 py-1 text-[11px] font-bold">
-                {count} منتج
-              </span>
-              {c.is_active && count === 0 && (
-                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-[11px] font-bold text-amber-700">
-                  لن يظهر في الرئيسية (بدون منتجات)
-                </span>
-              )}
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => toggleActive(c)}
-                  disabled={tableMissing}
-                  className="grid h-8 w-8 place-items-center rounded-full border hover:bg-muted disabled:opacity-40"
-                  title={c.is_active ? "إخفاء" : "إظهار"}
-                >
-                  {c.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={() => openEdit(c)}
-                  disabled={tableMissing}
-                  className="grid h-8 w-8 place-items-center rounded-full border text-primary hover:bg-muted disabled:opacity-40"
-                  title="تعديل"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => remove(c)}
-                  disabled={tableMissing}
-                  className="grid h-8 w-8 place-items-center rounded-full border text-destructive hover:bg-destructive/10 disabled:opacity-40"
-                  title="حذف"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-        {categories.length === 0 && (
-          <div className="p-10 text-center text-sm text-muted-foreground">
-            لا توجد أقسام بعد — اضغط "إضافة قسم".
-          </div>
-        )}
-      </div>
     </div>
   );
 }

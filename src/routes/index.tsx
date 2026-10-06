@@ -3,8 +3,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Coffee, ShieldCheck, Truck } from
 import { motion, AnimatePresence } from "motion/react";
 import { useEffect, useState } from "react";
 
-import { CategoryRow } from "@/components/category-row";
-import { useLiveCategories } from "@/lib/categories";
+import { ProductCard } from "@/components/product-card";
 import { heroBanners, products, useLiveProducts } from "@/lib/products";
 import { useLiveStoreSettings } from "@/lib/settings";
 
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [activeBanner, setActiveBanner] = useState(0);
   const { products: liveProducts } = useLiveProducts();
-  const { categories } = useLiveCategories();
   const { settings } = useLiveStoreSettings();
   const liveBanners =
     settings.hero_banners && settings.hero_banners.length > 0 ? settings.hero_banners : heroBanners;
@@ -44,12 +42,14 @@ function Index() {
   }, [liveBanners.length]);
 
   const activeItems = (liveProducts || products || []).filter((p) => p && p.isActive !== false);
-  const categoryRows = categories
-    .map((category) => ({
-      category,
-      items: activeItems.filter((p) => p.category === category.id),
-    }))
-    .filter((row) => row.items.length > 0);
+
+  // Split by category for section display
+  const coffeeProducts = activeItems.filter((p) => p.category === "coffee");
+  const toolsProducts = activeItems.filter((p) => p.category === "tools");
+
+  // Fallback: original best-sellers grid (kept for safety)
+  const bestSellers = activeItems.filter((x) => x.bestSeller);
+  const displayProducts = bestSellers.length > 0 ? bestSellers : activeItems.slice(0, 4);
 
   return (
     <div>
@@ -171,17 +171,72 @@ function Index() {
         ))}
       </section>
 
-      {/* Category rows — one horizontal section per category (managed from admin) */}
-      <div className="border-t border-border/60">
-        {categoryRows.map(({ category, items }) => (
-          <CategoryRow
-            key={category.id}
-            categoryId={category.id}
-            title={category.name}
-            products={items}
-          />
-        ))}
-      </div>
+      {/* ── Coffee Products Section ── */}
+      {coffeeProducts.length > 0 && (
+        <section className="py-6">
+          <div className="mx-auto max-w-6xl px-4 mb-4 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-secondary uppercase tracking-wider">
+                مختارات خصب
+              </span>
+              <h2 className="text-xl font-extrabold text-primary sm:text-2xl">
+                محاصيل القهوة المختصة
+              </h2>
+            </div>
+            <Link
+              to="/products"
+              search={{ cat: "coffee" }}
+              className="flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1.5 text-xs font-bold text-secondary hover:bg-secondary/20 transition-colors"
+            >
+              عرض الكل <ChevronLeft className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto pb-3 px-4"
+            style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+          >
+            {coffeeProducts.map((prod, i) => (
+              <div key={prod.slug} style={{ scrollSnapAlign: "start" }}>
+                <ProductCard product={prod} index={i} variant="scroll" />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Tools Products Section ── */}
+      {toolsProducts.length > 0 && (
+        <section className="py-6">
+          <div className="mx-auto max-w-6xl px-4 mb-4 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-secondary uppercase tracking-wider">
+                مختارات خصب
+              </span>
+              <h2 className="text-xl font-extrabold text-primary sm:text-2xl">
+                أدوات وإكسسوارات الباريستا
+              </h2>
+            </div>
+            <Link
+              to="/products"
+              search={{ cat: "tools" }}
+              className="flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1.5 text-xs font-bold text-secondary hover:bg-secondary/20 transition-colors"
+            >
+              عرض الكل <ChevronLeft className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div
+            className="flex gap-3 overflow-x-auto pb-3 px-4"
+            style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}
+          >
+            {toolsProducts.map((prod, i) => (
+              <div key={prod.slug} style={{ scrollSnapAlign: "start" }}>
+                <ProductCard product={prod} index={i} variant="scroll" />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       {/* CTA Section */}
       <section className="mx-auto max-w-6xl px-4 py-10">
