@@ -121,15 +121,15 @@ export function ProductCard({
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
 
-                {/* Low stock badge — top start, site secondary color */}
-                {isLowStock && (
+                {/* Limited badge — top start, site secondary color */}
+                {product.showLimitedBadge && (
                   <span className="absolute top-2 start-2 flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-secondary-foreground shadow">
                     ⚡ كمية محدودة
                   </span>
                 )}
 
-                {/* Product badge — top start (only if not low stock) */}
-                {product.badge && !isLowStock && (
+                {/* Product badge — top start (only if not showing limited badge) */}
+                {product.badge && !product.showLimitedBadge && (
                   <span className="absolute top-2 start-2 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold text-secondary-foreground shadow-xs">
                     {product.badge}
                   </span>
@@ -261,17 +261,17 @@ export function ProductCard({
                 </span>
               )}
               {/* Low stock badge — orange pill top-start (only if not showing product.badge) */}
-              {isLowStock && !product.badge && (
-                <span className="absolute top-3 start-3 flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-white shadow">
+              {product.showLimitedBadge && !product.badge && (
+                <span className="absolute top-3 start-3 flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-[10px] font-bold text-secondary-foreground shadow">
                   ⚡ كمية محدودة
                 </span>
               )}
-              {isLowStock && product.badge && (
+              {product.showLimitedBadge && product.badge && (
                 <span className="absolute top-3 start-3 flex flex-col gap-1">
                   <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-bold text-secondary-foreground shadow-xs">
                     {product.badge}
                   </span>
-                  <span className="flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-white shadow">
+                  <span className="flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-[10px] font-bold text-secondary-foreground shadow">
                     ⚡ كمية محدودة
                   </span>
                 </span>

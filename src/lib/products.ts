@@ -81,6 +81,7 @@ export type Product = {
   notes?: string[];
   specs?: { label: string; value: string }[];
   badge?: string;
+  showLimitedBadge?: boolean;
   bestSeller?: boolean;
 };
 
@@ -306,6 +307,10 @@ export const mapDbProduct = (row: any): Product => {
   }
   const safeImages = Array.isArray(images) && images.length > 0 ? images : [row.image || beans.url];
 
+  const rawBadge = row.badge || "";
+  const showLimitedBadge = rawBadge.includes("::LIMITED");
+  const actualBadge = rawBadge.replace("::LIMITED", "").trim();
+
   return {
     id: row.id,
     slug: row.slug || "product-" + Math.random().toString(36).slice(2, 7),
@@ -326,7 +331,8 @@ export const mapDbProduct = (row: any): Product => {
     process: row.process,
     notes: Array.isArray(row.notes) ? row.notes : [],
     specs: Array.isArray(row.specs) ? row.specs : [],
-    badge: row.badge,
+    badge: actualBadge || undefined,
+    showLimitedBadge,
     bestSeller: row.best_seller ?? false,
   };
 };

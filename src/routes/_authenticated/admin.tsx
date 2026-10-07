@@ -670,6 +670,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
     origin: "",
     process: "",
     badge: "",
+    showLimitedBadge: false,
     notes: [] as string[],
     isCoffee: true,
     bestSeller: false,
@@ -695,6 +696,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       origin: "",
       process: "",
       badge: "",
+      showLimitedBadge: false,
       notes: [],
       isCoffee: true,
       bestSeller: false,
@@ -723,8 +725,9 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
       sellingPriceSar: firstVariant.sar,
       origin: p.origin || "",
       process: p.process || "",
-      badge: (p as any).badge || "",
-      notes: Array.isArray((p as any).notes) ? (p as any).notes : [],
+      badge: p.badge || "",
+      showLimitedBadge: p.showLimitedBadge || false,
+      notes: Array.isArray(p.notes) ? p.notes : [],
       isCoffee: p.isCoffee ?? false,
       bestSeller: p.bestSeller ?? false,
       image: p.image || imgs[0] || "",
@@ -858,7 +861,7 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
         is_coffee: form.isCoffee,
         origin: form.origin,
         process: form.process,
-        badge: form.badge || null,
+        badge: form.showLimitedBadge ? `${form.badge || ""}::LIMITED` : form.badge || null,
         notes: form.notes.filter(Boolean),
         best_seller: form.bestSeller,
         is_active: true,
@@ -1583,6 +1586,17 @@ function ProductsModule({ products, refetch }: { products: Product[]; refetch: (
                     />
                   </label>
                 </div>
+                <label className="flex items-center gap-2 rounded-xl border bg-background p-3 cursor-pointer mt-3">
+                  <input
+                    type="checkbox"
+                    checked={form.showLimitedBadge}
+                    onChange={(e) => setForm({ ...form, showLimitedBadge: e.target.checked })}
+                    className="h-4 w-4 rounded text-primary focus:ring-primary"
+                  />
+                  <span className="text-xs font-bold text-foreground">
+                    عرض شارة "⚡ كمية محدودة"
+                  </span>
+                </label>
                 <label className="block">
                   <span className="text-[11px] font-bold text-muted-foreground block mb-1">
                     إيحاءات النكهة (مفصولة بفاصلة)
