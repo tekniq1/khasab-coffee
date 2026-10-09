@@ -135,11 +135,11 @@ export function ProductCard({
                   </span>
                 )}
 
-                {/* Out-of-stock pill — bottom center (RTL-safe) */}
+                {/* Out-of-stock overlay badge */}
                 {isOutOfStock ? (
-                  <div className="absolute bottom-0 inset-x-0 flex justify-center pb-2">
-                    <span className="flex items-center gap-1 rounded-full border border-destructive/20 bg-white/90 px-3 py-1 text-[10px] font-bold text-destructive shadow whitespace-nowrap backdrop-blur-xs">
-                      🚫 نفد من المخزون
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-black text-destructive shadow">
+                      نفدت الكمية
                     </span>
                   </div>
                 ) : (
@@ -276,11 +276,13 @@ export function ProductCard({
                   </span>
                 </span>
               )}
-              {/* Out-of-stock — small pill at bottom center, not full overlay */}
+              {/* Out-of-stock overlay badge */}
               {isOutOfStock && (
-                <span className="absolute bottom-3 start-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full border border-destructive/20 bg-white/90 px-3 py-1.5 text-[10px] font-bold text-destructive shadow whitespace-nowrap backdrop-blur-xs">
-                  🚫 نفد من المخزون
-                </span>
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <span className="rounded-full bg-white/90 px-4 py-1.5 text-xs font-black text-destructive shadow">
+                    نفدت الكمية
+                  </span>
+                </div>
               )}
             </div>
             <div className="space-y-1 p-4">

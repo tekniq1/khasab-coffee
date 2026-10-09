@@ -189,9 +189,9 @@ function Index() {
               <Link
                 to="/products"
                 search={{ cat: cat.id }}
-                className="flex items-center gap-1 rounded-full border border-secondary/30 bg-secondary/10 px-4 py-1.5 text-xs font-bold text-secondary hover:bg-secondary/20 transition-colors"
+                className="group flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow"
               >
-                عرض الكل <ChevronLeft className="h-3.5 w-3.5" />
+                عرض الكل <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
               </Link>
             </div>
             <div
